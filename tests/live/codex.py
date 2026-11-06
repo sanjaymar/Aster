@@ -10,6 +10,7 @@ from mini_harness.tool.box import ToolDefinition, ToolExecution
 from aster.agent.config import ResearchConfig
 from aster.domain.schemas import Input
 from aster.models.codex import CodexClient
+from aster.app.settings import Settings
 
 
 class Lookup(Input):
@@ -72,7 +73,7 @@ def main():
             "answer": answer,
             "calls": calls,
         }
-        path = Path(".local/daily-assistant-2026-11-06/codex-tools-live.json")
+        path = Settings.from_env().data_dir / "experiments/reading/codex.json"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(report, indent=2))
         print("Codex tool bridge passed", path)

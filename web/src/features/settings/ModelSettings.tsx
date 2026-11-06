@@ -17,7 +17,7 @@ const fresh: ModelProfile = {
     base_url: "http://127.0.0.1:8000/v1",
     model: "auto",
     max_tokens: 4096,
-    timeout: 180,
+    timeout: 600,
     key_env: "",
 };
 

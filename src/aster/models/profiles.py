@@ -25,7 +25,7 @@ class ProfileInput(Input):
     base_url: str = Field(default="http://127.0.0.1:8000/v1", max_length=500)
     model: str = Field(default="auto", min_length=1, max_length=200)
     max_tokens: int = Field(default=4096, ge=128, le=16384)
-    timeout: int = Field(default=180, ge=15, le=900)
+    timeout: int = Field(default=600, ge=15, le=900)
     api_key: str | None = Field(default=None, max_length=4000)
     key_env: str = Field(default="", max_length=100)
     clear_key: bool = False
@@ -66,7 +66,7 @@ class ModelProfiles:
     def __init__(self, db, settings):
         self.db, self.settings = db, settings
         self.lock = threading.RLock()
-        self.key_path = db.data_dir / "model-keys.json"
+        self.key_path = db.data_dir / "config" / "keys.json"
 
     def state(self):
         with self.db.session() as s:
@@ -81,7 +81,7 @@ class ModelProfiles:
                 "base_url": self.settings.model_url,
                 "model": self.settings.model_name,
                 "max_tokens": 4096,
-                "timeout": 180,
+                "timeout": 600,
                 "key_env": "",
                 "disable_thinking": True,
                 **(old.value if old else {}),

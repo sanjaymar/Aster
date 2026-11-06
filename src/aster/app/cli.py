@@ -6,12 +6,18 @@ from aster.app.settings import Settings
 
 
 def main():
+    home = Settings.from_env().data_dir
     parser = argparse.ArgumentParser(description="Aster · Research Assistant")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--data-dir", help="本地数据库与附件目录")
     parser.add_argument("--migrate-only", action="store_true")
     commands = parser.add_subparsers(dest="command")
+    collect = commands.add_parser("collect", help="采集近期开放获取期刊论文与原始PDF")
+    collect.add_argument("--topic", choices=["metabolomics", "ai4bio"], required=True)
+    collect.add_argument("--limit", type=int, default=30)
+    collect.add_argument("--since", default="2024-01-01")
+    collect.add_argument("--project")
     models = commands.add_parser("models", help="检查或下载固定版本的本地检索模型")
     models.add_argument("--download", action="store_true")
     corpus = commands.add_parser("corpus", help="查看项目语料与分块统计")
@@ -29,10 +35,10 @@ def main():
     suite.add_argument("suite_args", nargs=argparse.REMAINDER)
     evaluate = commands.add_parser("evaluate", help="在独立示例库或指定项目上运行检索消融")
     evaluate.add_argument("--project")
-    evaluate.add_argument("--papers", default=".local/evaluation/papers")
+    evaluate.add_argument("--papers", default=str(home / "archive/retrieval/papers"))
     evaluate.add_argument("--dataset", default="eval/retrieval.json")
     evaluate.add_argument("--strategies", default="bm25,dense,hybrid,hybrid-rerank")
-    evaluate.add_argument("--output", default=".local/evaluation/retrieval-report.json")
+    evaluate.add_argument("--output", default=str(home / "experiments/retrieval/report.json"))
     import sys
 
     if "evaluate-suite" in sys.argv:
@@ -41,12 +47,22 @@ def main():
         position = sys.argv.index("evaluate-suite")
         prefix = parser.parse_args(sys.argv[1:position])
         if prefix.data_dir:
-            os.environ["ASTER_DATA_DIR"] = prefix.data_dir
+            from pathlib import Path
+
+            os.environ["ASTER_HOME"] = str(Path(prefix.data_dir).resolve())
+            os.environ["ASTER_DATABASE_URL"] = "sqlite:///" + str(
+                Path(prefix.data_dir).resolve() / "library/aster.db"
+            )
         sys.argv = [sys.argv[0], *sys.argv[position + 1 :]]
         return suite_main()
     args = parser.parse_args()
     if args.data_dir:
-        os.environ["ASTER_DATA_DIR"] = args.data_dir
+        from pathlib import Path
+
+        os.environ["ASTER_HOME"] = str(Path(args.data_dir).resolve())
+        os.environ["ASTER_DATABASE_URL"] = "sqlite:///" + str(
+            Path(args.data_dir).resolve() / "library/aster.db"
+        )
     settings = Settings.from_env()
     if args.command:
         from aster.storage.database import Database
@@ -60,6 +76,12 @@ def main():
             db.migrate()
             service = Service(db)
             retriever = Retriever(service, settings)
+            if args.command == "collect":
+                from aster.library.collect import collect
+
+                value = collect(service, args.topic, args.limit, args.since, args.project)
+                print(json.dumps(value, ensure_ascii=False, indent=2))
+                return
             if args.command == "evaluate":
                 from aster.evaluation.retrieval import ingest_public_corpus, evaluate_retrieval
                 from pathlib import Path

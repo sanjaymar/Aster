@@ -7,6 +7,8 @@ import "./styles/library.css";
 import "./styles/reader.css";
 import "./styles/settings.css";
 import "./styles/notebook.css";
+import "./styles/map.css";
+import "./styles/slides.css";
 import "katex/dist/katex.min.css";
 createRoot(document.getElementById("root")!).render(
     <React.StrictMode>

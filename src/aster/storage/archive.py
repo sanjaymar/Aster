@@ -3,8 +3,8 @@
 import hashlib
 import io
 import json
-import re
 import zipfile
+from pathlib import Path
 
 from sqlalchemy import select
 
@@ -263,13 +263,23 @@ class ProjectArchive:
                         if "id" in row:
                             mapping[row["id"]] = uid()
                 for a in tables.get("assets", []):
-                    digest = a["storage_key"]
-                    if not re.fullmatch(r"[a-f0-9]{64}", digest):
+                    key = a["storage_key"]
+                    if not key or Path(key).name != key or key in {".", ".."} or "\\" in key:
                         raise Problem("附件标识无效")
-                    content = z.read("files/" + digest)
-                    if hashlib.sha256(content).hexdigest() != a["sha256"] or a["sha256"] != digest:
+                    content = z.read("files/" + key)
+                    if hashlib.sha256(content).hexdigest() != a["sha256"]:
                         raise Problem("备份附件校验失败")
-                    (self.files / digest).write_bytes(content)
+                    from aster.storage.paths import filename
+
+                    restored_key = filename(a["name"])
+                    path = self.files / restored_key
+                    if (
+                        path.exists()
+                        and hashlib.sha256(path.read_bytes()).hexdigest() != a["sha256"]
+                    ):
+                        restored_key = f"{path.stem}-{uid()[:6]}{path.suffix}"
+                    (self.files / restored_key).write_bytes(content)
+                    a["storage_key"] = restored_key
                 with self.db.session() as s:
                     project = Project(
                         id=mapping[original["id"]],

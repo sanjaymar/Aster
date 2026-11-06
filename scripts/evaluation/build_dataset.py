@@ -184,13 +184,14 @@ BOUNDARIES = {
 
 
 def main():
+    home = Settings.from_env().data_dir
     p = argparse.ArgumentParser()
-    p.add_argument("--directory", default=".local/metabolomics/eval")
+    p.add_argument("--directory", default=str(home / "experiments/qa/dataset"))
     p.add_argument("--model-queries", action="store_true")
     args = p.parse_args()
     target = Path(args.directory)
     target.mkdir(parents=True, exist_ok=True)
-    origins = json.loads(Path(".local/metabolomics/imported.json").read_text())["papers"]
+    origins = json.loads((home / "experiments/qa/corpus/imported.json").read_text())["papers"]
     project = origins["project_id"]
     settings = Settings.from_env()
     db = Database(settings.database_url, settings.data_dir)
@@ -201,7 +202,9 @@ def main():
     by_source = {}
     for item in items:
         by_source.setdefault(item.source_id, []).append(item)
-    metadata = json.loads(Path(".local/metabolomics/papers/manifest.json").read_text())["papers"]
+    metadata = json.loads((home / "experiments/qa/corpus/papers/manifest.json").read_text())[
+        "papers"
+    ]
     selected = []
     for paper in metadata:
         source = origins["sources"][paper["accession"]]["source_id"]

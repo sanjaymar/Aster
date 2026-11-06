@@ -8,6 +8,10 @@ export type ResearchTask = {
     mode: string;
     scope: string;
     responseStyle: string;
+    sourceIds?: string[];
+    artifactIds?: string[];
+    skillId?: string;
+    modelId?: string;
 };
 type Props = {
     project: Project;
@@ -17,8 +21,8 @@ type Props = {
     onError: (message: string) => void;
     onImport: () => void;
     onNote: () => void;
-    onExperiment: () => void;
-    onWriting: () => void;
+    onMap: () => void;
+    onSlides: () => void;
     onEdit: () => void;
     onRecord: (record: RecordItem) => void;
     onSource: (source: Source) => void;
@@ -32,15 +36,15 @@ export function ResearchHome({
     onError,
     onImport,
     onNote,
-    onExperiment,
-    onWriting,
+    onMap,
+    onSlides,
     onEdit,
     onRecord,
     onSource,
 }: Props) {
     const [prompt, setPrompt] = useState("");
     const [scope, setScope] = useState("project");
-    const [responseStyle, setResponseStyle] = useState("discussion");
+    const [responseStyle, setResponseStyle] = useState("auto");
     const [busy, setBusy] = useState(false);
     async function submit() {
         if (!prompt.trim() || busy) return;
@@ -66,27 +70,11 @@ export function ResearchHome({
             count: bundle.records.filter((r) => r.kind === "note").length,
             click: onNote,
         },
-        ...(project.domain === "research"
-            ? [
-                  {
-                      label: "实验记录",
-                      count:
-                          bundle.records.filter(
-                              (record) => record.kind === "labnote",
-                          ).length +
-                          bundle.experiments.reduce(
-                              (count, experiment) =>
-                                  count + experiment.runs.length,
-                              0,
-                          ),
-                      click: onExperiment,
-                  },
-              ]
-            : []),
+        { label: "文献地图", count: bundle.sources.length, click: onMap },
         {
-            label: "草稿",
-            count: bundle.records.filter((r) => r.kind === "draft").length,
-            click: onWriting,
+            label: "汇报",
+            count: bundle.records.filter((r) => r.kind === "deck").length,
+            click: onSlides,
         },
     ];
     return (
@@ -168,7 +156,7 @@ export function ResearchHome({
                                 }
                             >
                                 <option value="grounded">资料问答</option>
-                                <option value="discussion">讨论思路</option>
+                                <option value="auto">按需检索</option>
                             </select>
                         </div>
                         <button

@@ -40,41 +40,6 @@
     font-size: 9px;
     color: #838383;
 }
-.experiment-list {
-    display: grid;
-    gap: 23px;
-}
-.experiment-card {
-    border: 1px solid var(--line);
-    border-radius: 9px;
-    padding: 25px;
-    background: #fdfdfd;
-}
-.experiment-summary {
-    font-size: 12px;
-    color: #969696;
-    margin: 18px 0;
-    white-space: pre-wrap;
-}
-.plan-actions {
-    gap: 13px;
-}
-.experiment-run {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    border-top: 1px solid var(--line);
-    padding-top: 19px;
-    margin-top: 19px;
-}
-.experiment-run > div:nth-child(2) {
-    flex: 1;
-    min-width: 0;
-}
-.experiment-run p {
-    font-size: 10px;
-    margin-top: 3px;
-}
 .source-text {
     white-space: pre-wrap;
     overflow-wrap: anywhere;
@@ -88,18 +53,6 @@
 @media (max-width: 760px) {
     .note-grid {
         grid-template-columns: 1fr;
-    }
-    .experiment-card {
-        padding: 19px;
-    }
-    .experiment-card .section-heading {
-        flex-wrap: wrap;
-    }
-    .experiment-run .small {
-        font-size: 9px;
-    }
-    .experiment-run .text-button {
-        font-size: 11px;
     }
     .source-text {
         font-size: 13px;

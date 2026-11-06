@@ -7,6 +7,8 @@ import math
 import os
 import re
 import threading
+import sqlite3
+import io
 from collections import Counter, OrderedDict
 from dataclasses import dataclass
 from pathlib import Path
@@ -91,7 +93,10 @@ def model_path(name, data_dir):
     explicit = Path(name).expanduser()
     if explicit.is_dir() and (explicit / "config.json").is_file():
         return explicit.resolve()
-    local = Path(data_dir) / "models" / name.split("/")[-1]
+    label = {"BAAI/bge-m3": "embedding", "BAAI/bge-reranker-v2-m3": "reranker"}.get(
+        name, name.split("/")[-1]
+    )
+    local = Path(data_dir) / "models" / label
     if (local / "config.json").is_file() and any(
         (local / f).is_file() for f in ["model.safetensors", "pytorch_model.bin"]
     ):
@@ -164,9 +169,13 @@ class LocalModels:
             path = model_path(name, self.settings.data_dir)
             version = None
             if path:
-                stamp = path / "zhixu-model.json"
+                stamp = path / "model.json"
+                if not stamp.exists():
+                    stamp = path / "zhixu-model.json"
                 if stamp.is_file():
-                    version = json.loads(stamp.read_text()).get("revision")
+                    metadata = json.loads(stamp.read_text())
+                    version = metadata.get("revision")
+                    name = metadata.get("id", name)
                 else:
                     version = (
                         path.name
@@ -185,7 +194,7 @@ class LocalModels:
             if self.embedding is None:
                 status = self.status()
                 if not status["dependencies"] or not status["embedding_ready"]:
-                    raise Problem("完整检索模型尚未准备好，请运行 zhixu models --download", 503)
+                    raise Problem("完整检索模型尚未准备好，请运行 aster models --download", 503)
                 import torch
                 from sentence_transformers import SentenceTransformer
 
@@ -245,8 +254,8 @@ class Retriever:
         self.cache = OrderedDict()
         self.query_cache = OrderedDict()
         self.lock = threading.RLock()
-        self.root = self.db.data_dir / "indexes"
-        self.root.mkdir(exist_ok=True)
+        self.root = self.db.data_dir / "cache" / "indexes"
+        self.root.mkdir(parents=True, exist_ok=True)
 
     def status(self):
         model = self.models.status()
@@ -263,31 +272,33 @@ class Retriever:
 
     def _vectors(self, items):
         modelkey = json.dumps(self.models.fingerprint()["embedding"], sort_keys=True)
-        directory = self.root / "vectors"
-        directory.mkdir(exist_ok=True)
         vectors = {}
         missing = []
-        for item in items:
-            key = hashlib.sha256((modelkey + "\n" + item.text).encode()).hexdigest()
-            path = directory / (key + ".npy")
-            try:
-                vec = np.load(path, allow_pickle=False)
-                if vec.ndim != 1 or not np.isfinite(vec).all():
-                    raise ValueError("invalid cached vector")
-                vectors[item.id] = vec
-            except (OSError, ValueError):
-                missing.append((item, path))
-        for start in range(0, len(missing), 64):
-            batch = missing[start : start + 64]
-            encoded = self.models.encode([i.text for i, p in batch])
-            for (item, path), vector in zip(batch, encoded, strict=True):
-                temporary = path.with_name(
-                    path.stem + "." + __import__("uuid").uuid4().hex + ".tmp"
-                )
-                with temporary.open("wb") as output:
+        with sqlite3.connect(self.root / "embeddings.db", timeout=30) as cache:
+            cache.execute(
+                "create table if not exists vectors (key text primary key, data blob not null)"
+            )
+            for item in items:
+                key = hashlib.sha256((modelkey + "\n" + item.text).encode()).hexdigest()
+                row = cache.execute("select data from vectors where key=?", (key,)).fetchone()
+                try:
+                    vec = np.load(io.BytesIO(row[0]), allow_pickle=False) if row else None
+                    if vec is None or vec.ndim != 1 or not np.isfinite(vec).all():
+                        raise ValueError("invalid cached vector")
+                    vectors[item.id] = vec
+                except (OSError, ValueError):
+                    missing.append((item, key))
+            for start in range(0, len(missing), 64):
+                batch = missing[start : start + 64]
+                encoded = self.models.encode([i.text for i, k in batch])
+                for (item, key), vector in zip(batch, encoded, strict=True):
+                    output = io.BytesIO()
                     np.save(output, vector, allow_pickle=False)
-                temporary.replace(path)
-                vectors[item.id] = vector
+                    cache.execute(
+                        "insert or replace into vectors values (?,?)", (key, output.getvalue())
+                    )
+                    vectors[item.id] = vector
+                cache.commit()
         matrix = np.stack([vectors[i.id] for i in items]).astype(np.float32)
         norms = np.linalg.norm(matrix, axis=1, keepdims=True)
         return matrix / np.maximum(norms, 1e-12)
@@ -328,8 +339,8 @@ class Retriever:
                     matrix = self._vectors(items)
                     index = faiss.IndexFlatIP(matrix.shape[1])
                     index.add(matrix)
-                    directory = self.root / fingerprint
-                    directory.mkdir(exist_ok=True)
+                    directory = self.root / project_id[:8]
+                    directory.mkdir(parents=True, exist_ok=True)
                     faiss.write_index(index, str(directory / "vectors.faiss"))
                     cached.update(matrix=matrix, index=index)
                 self.cache[fingerprint] = cached
@@ -417,14 +428,17 @@ def prepare_models(settings):
         "BAAI/bge-reranker-v2-m3": "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e",
     }
     outputs = []
-    for model in [settings.embedding_model, settings.reranker_model]:
+    for label, model in [
+        ("embedding", settings.embedding_model),
+        ("reranker", settings.reranker_model),
+    ]:
         if model not in pinned:
             path = model_path(model, settings.data_dir)
             if not path:
                 raise Problem("自定义模型请先准备本地目录，并配置模型路径")
             outputs.append(str(path))
             continue
-        target = settings.data_dir / "models" / model.split("/")[-1]
+        target = settings.data_dir / "models" / label
         snapshot_download(
             model,
             revision=pinned[model],
@@ -433,8 +447,6 @@ def prepare_models(settings):
             ignore_patterns=["onnx/*", "imgs/*"],
             max_workers=2,
         )
-        (target / "zhixu-model.json").write_text(
-            json.dumps({"id": model, "revision": pinned[model]})
-        )
+        (target / "model.json").write_text(json.dumps({"id": model, "revision": pinned[model]}))
         outputs.append(str(target))
     return outputs

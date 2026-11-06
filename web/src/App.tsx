@@ -19,7 +19,9 @@ import Assistant from "./features/assistant/Assistant";
 
 import { RecordsPage } from "./features/documents/RecordsPage";
 
-import { ExperimentsPage } from "./features/experiments/ExperimentsPage";
+import { LiteratureMap } from "./features/library/LiteratureMap";
+import { SlidesPage } from "./features/slides/SlidesPage";
+import { SlideEditor } from "./features/slides/SlideEditor";
 import { LibraryPage } from "./features/library/LibraryPage";
 
 import { Login } from "./features/settings/Login";
@@ -35,13 +37,11 @@ import {
     type Asset,
     type Bundle,
     type Evidence,
-    type Experiment,
     type ModelState,
     type Project,
     type RecordItem,
     type Run,
     type Source,
-    type ExperimentResult,
 } from "./shared/api";
 import { EvidenceModal, Modal, Spinner } from "./shared/components";
 import type { EditorState } from "./shared/types";
@@ -56,18 +56,8 @@ const DocumentEditor = lazy(() =>
         default: module.DocumentEditor,
     })),
 );
-const ExperimentForm = lazy(() =>
-    import("./features/experiments/ExperimentDialogs").then((module) => ({
-        default: module.ExperimentForm,
-    })),
-);
-const ResultForm = lazy(() =>
-    import("./features/experiments/ExperimentDialogs").then((module) => ({
-        default: module.ResultForm,
-    })),
-);
 const CsvView = lazy(() =>
-    import("./features/experiments/ExperimentDialogs").then((module) => ({
+    import("./shared/CsvView").then((module) => ({
         default: module.CsvView,
     })),
 );
@@ -97,13 +87,6 @@ export default function App() {
         [reader, setReader] = useState<Source | null>(null),
         [editor, setEditor] = useState<EditorState | null>(null),
         [evidence, setEvidence] = useState<Evidence | null>(null),
-        [experimentModal, setExperimentModal] = useState<
-            Experiment | null | undefined
-        >(),
-        [resultModal, setResultModal] = useState<{
-            experiment: Experiment;
-            result?: ExperimentResult;
-        } | null>(null),
         [csv, setCsv] = useState<Asset | null>(null);
     const [query, setQuery] = useState(""),
         [results, setResults] = useState<Array<{
@@ -143,26 +126,18 @@ export default function App() {
         if (!projectId) return;
         const base = `/projects/${projectId}`;
         try {
-            const [
-                sources,
-                records,
-                experiments,
-                conversations,
-                overview,
-                runs,
-            ] = await Promise.all([
-                api<Bundle["sources"]>(base + "/sources"),
-                api<Bundle["records"]>(base + "/artifacts"),
-                api<Bundle["experiments"]>(base + "/experiments"),
-                api<Bundle["conversations"]>(base + "/conversations"),
-                api<Bundle["overview"]>(base + "/overview"),
-                api<Bundle["runs"]>(base + "/runs?active_only=true"),
-            ]);
+            const [sources, records, conversations, overview, runs] =
+                await Promise.all([
+                    api<Bundle["sources"]>(base + "/sources"),
+                    api<Bundle["records"]>(base + "/artifacts"),
+                    api<Bundle["conversations"]>(base + "/conversations"),
+                    api<Bundle["overview"]>(base + "/overview"),
+                    api<Bundle["runs"]>(base + "/runs?active_only=true"),
+                ]);
             if (activeProject.current === projectId)
                 setBundle({
                     sources,
                     records,
-                    experiments,
                     conversations,
                     overview,
                     runs,
@@ -223,15 +198,6 @@ export default function App() {
         if (next === "assistant") setAssistant(true);
     }
     function openRecord(record: RecordItem) {
-        if (record.kind === "plan") {
-            const item = bundle.experiments.find(
-                (item) => item.plan.id === record.id,
-            );
-            if (item) {
-                setExperimentModal(item);
-                return;
-            }
-        }
         setEditor({ kind: record.kind, record });
     }
     async function openEvidence(kind: string, id: string) {
@@ -258,11 +224,13 @@ export default function App() {
             send("POST", {
                 prompt: task.prompt,
                 mode: task.mode,
-                source_ids: sourceIds,
-                artifact_ids: artifactIds,
+                source_ids: task.sourceIds || sourceIds,
+                artifact_ids: task.artifactIds || artifactIds,
                 retrieval_scope: task.scope,
                 response_style: task.responseStyle,
-                engine: "assistant",
+                engine: "pipeline",
+                skill_id: task.skillId || null,
+                model_profile_id: task.modelId || null,
             }),
         );
         if (activeProject.current !== projectId) return;
@@ -382,7 +350,10 @@ export default function App() {
                             onClick={() => navigate("settings")}
                         >
                             <span className="status-dot" />
-                            {model?.config.name || (model?.connected ? model.selected : "连接模型")}
+                            {model?.config.name ||
+                                (model?.connected
+                                    ? model.selected
+                                    : "连接模型")}
                         </button>
                         {project && (
                             <button
@@ -434,6 +405,15 @@ export default function App() {
                         <div className="loading-state">
                             <Spinner />
                         </div>
+                    ) : editor?.record?.kind === "deck" ? (
+                        <SlideEditor
+                            projectId={projectId}
+                            record={editor.record}
+                            onClose={() => setEditor(null)}
+                            onSaved={() => void refreshDocuments()}
+                            onError={report}
+                            onEvidence={openEvidence}
+                        />
                     ) : editor ? (
                         <Suspense fallback={<Spinner />}>
                             <DocumentEditor
@@ -466,14 +446,8 @@ export default function App() {
                                     onError={report}
                                     onImport={() => setImportModal(true)}
                                     onNote={() => setEditor({ kind: "note" })}
-                                    onExperiment={() => {
-                                        setPage("experiments");
-                                        setEditor({ kind: "labnote" });
-                                    }}
-                                    onWriting={() => {
-                                        setPage("writing");
-                                        setEditor({ kind: "draft" });
-                                    }}
+                                    onMap={() => setPage("map")}
+                                    onSlides={() => setPage("slides")}
                                     onEdit={() => {
                                         setEditingProject(project);
                                         setProjectModal(true);
@@ -494,35 +468,38 @@ export default function App() {
                                     onError={report}
                                 />
                             )}
-                            {["notes", "writing"].includes(page) && (
+                            {page === "notes" && (
                                 <RecordsPage
-                                    page={page}
-                                    project={project}
                                     bundle={bundle}
                                     artifactIds={artifactIds}
                                     setArtifactIds={setArtifactIds}
                                     setEditor={setEditor}
                                     openRecord={openRecord}
+                                    onStart={startResearch}
+                                    onError={report}
                                 />
                             )}
-                            {page === "experiments" && (
-                                <ExperimentsPage
+                            {page === "map" && (
+                                <LiteratureMap
+                                    projectId={projectId}
+                                    sources={bundle.sources}
+                                    records={bundle.records}
+                                    onOpen={setReader}
+                                    onRecord={openRecord}
+                                    onNote={(s) => { void startResearch({prompt:"为这篇论文生成结构完整的精读报告，包含研究问题、方法与数据、结果、局限及待追问问题。",mode:"reading",scope:"selected",responseStyle:"grounded",sourceIds:[s.id],skillId:"paper-reading"}).catch(e=>report(e.message)); }}
+                                    onSlides={(s) => {setSourceIds([s.id]);navigate("slides");}}
+                                    onError={report}
+                                />
+                            )}
+                            {page === "slides" && (
+                                <SlidesPage
+                                    projectId={projectId}
                                     bundle={bundle}
-                                    artifactIds={artifactIds}
-                                    setArtifactIds={setArtifactIds}
-                                    setExperimentModal={setExperimentModal}
-                                    setResultModal={(experiment, result) =>
-                                        setResultModal(
-                                            experiment
-                                                ? { experiment, result }
-                                                : null,
-                                        )
-                                    }
-                                    setCsv={setCsv}
-                                    openRecord={openRecord}
-                                    onNewLog={() =>
-                                        setEditor({ kind: "labnote" })
-                                    }
+                                    initialSources={sourceIds}
+                                    onOpen={openRecord}
+                                    onStart={startResearch}
+                                    onError={report}
+                                    onRefresh={() => void refreshDocuments()}
                                 />
                             )}
                         </>
@@ -616,35 +593,6 @@ export default function App() {
                     item={evidence}
                     onClose={() => setEvidence(null)}
                 />
-            )}
-            {experimentModal !== undefined && (
-                <Suspense fallback={<Spinner />}>
-                    <ExperimentForm
-                        projectId={projectId}
-                        experiment={experimentModal}
-                        onClose={() => setExperimentModal(undefined)}
-                        onError={report}
-                        onSaved={() => {
-                            setExperimentModal(undefined);
-                            void refresh();
-                        }}
-                    />
-                </Suspense>
-            )}
-            {resultModal && (
-                <Suspense fallback={<Spinner />}>
-                    <ResultForm
-                        projectId={projectId}
-                        experiment={resultModal.experiment}
-                        result={resultModal.result}
-                        onClose={() => setResultModal(null)}
-                        onError={report}
-                        onSaved={() => {
-                            setResultModal(null);
-                            void refresh();
-                        }}
-                    />
-                </Suspense>
             )}
             {csv && (
                 <Suspense fallback={<Spinner />}>

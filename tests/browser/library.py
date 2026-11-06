@@ -16,7 +16,9 @@ from playwright.sync_api import expect, sync_playwright
 
 def main():
     root = Path(__file__).resolve().parents[2]
-    output = root / ".local/library-layout-validation"
+    from aster.app.settings import Settings
+
+    output = Settings.from_env().data_dir / "cache/checks/library"
     output.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="aster-library-") as temp:
         directory = Path(temp)
@@ -31,7 +33,7 @@ def main():
             if not key.startswith(("ASTER_", "ZHIXU_"))
         }
         env.update(
-            ASTER_DATA_DIR=str(directory),
+            ASTER_HOME=str(directory),
             ASTER_DATABASE_URL=f"sqlite:///{database}",
             ASTER_RETRIEVAL_MODE="lexical",
             ASTER_MODEL_URL="http://127.0.0.1:1/v1",

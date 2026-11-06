@@ -136,22 +136,11 @@ def test_reader_can_pin_an_old_version_without_crossing_project_scope(client, mo
     )
 
 
-def test_lab_notes_and_plan_attachments_store_tables_without_running_experiments(client):
+def test_notes_store_markdown_tables(client):
     pid = fixtures.project(client)
-    matrix = "| 条件 | 峰面积 |\n| --- | --- |\n| QC | 1.2300e-8 |"
-    note = fixtures.note(client, pid, matrix, kind="labnote")
-    assert note["kind"] == "labnote" and note["version"]["content"] == matrix
-    asset = client.post(
-        f"/api/projects/{pid}/assets",
-        files={"file": ("matrix.csv", b"condition,area\nQC,1.2300e-8", "text/csv")},
-    ).json()
-    plan = client.post(
-        f"/api/projects/{pid}/experiments",
-        json={"title": "QC design", "content": matrix, "asset_ids": [asset["id"]]},
-    )
-    assert plan.status_code == 201, plan.text
-    assert plan.json()["plan"]["attachments"][0]["id"] == asset["id"]
-    assert client.get(f"/api/projects/{pid}/experiments").json()[0]["runs"] == []
+    matrix = "| sample | value |\n|---|---|\n| A | 1 |"
+    record = fixtures.note(client, pid, matrix)
+    assert record["version"]["content"] == matrix
 
 
 def test_conversation_can_reconnect_without_loading_task_history(client, monkeypatch):

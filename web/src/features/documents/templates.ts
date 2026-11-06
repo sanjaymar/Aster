@@ -7,7 +7,6 @@ export const noteTypes: Record<string, string> = {
     meeting: "组会记录",
     method: "方法卡片",
     comparison: "文献对照",
-    writing: "论文写作",
 };
 export const templates = [
     {
@@ -63,29 +62,5 @@ export const templates = [
         description: "把多篇文献放在同一张表",
         content:
             "## 比较问题\n\n| 文献 | 研究对象 | 方法 | 主要结果 | 局限 |\n| --- | --- | --- | --- | --- |\n|  |  |  |  |  |\n\n## 分歧与启发\n",
-    },
-    {
-        id: "writing",
-        label: "论文提纲",
-        type: "writing",
-        description: "引言、方法、结果与讨论",
-        content:
-            "## 研究问题与贡献\n\n## 引言\n\n## 方法\n\n## 结果\n\n## 讨论\n\n## 待补材料\n",
-    },
-    {
-        id: "rebuttal",
-        label: "审稿回复",
-        type: "writing",
-        description: "逐条意见与修改位置",
-        content:
-            "## 审稿意见 1\n\n### 回应\n\n### 修改位置\n\n### 待办\n\n- [ ] \n",
-    },
-    {
-        id: "labnote",
-        label: "实验记录",
-        type: "daily",
-        description: "实际条件与观察",
-        content:
-            "## 日期与目的\n\n## 实际条件\n\n| 样本 / 批次 | 处理 | 参数 | 原始文件 |\n| --- | --- | --- | --- |\n|  |  |  |  |\n\n## 观察与结果\n\n## 偏差与后续\n",
     },
 ];

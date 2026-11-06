@@ -624,9 +624,10 @@ class Suite:
 
 
 def main():
+    home = Settings.from_env().data_dir
     parser = argparse.ArgumentParser(description="Aster metabolomics evaluation")
-    parser.add_argument("--dataset-dir", default=".local/metabolomics/eval")
-    parser.add_argument("--output", default=".local/metabolomics/evaluation/run-20261105")
+    parser.add_argument("--dataset-dir", default=str(home / "experiments/qa/dataset"))
+    parser.add_argument("--output", default=str(home / "experiments/qa/current"))
     parser.add_argument("--suites", default="intent,rewrite,retrieval,boundary,dialogues,memory")
     parser.add_argument("--variants", default="full")
     parser.add_argument("--ablation-turns", type=int, default=12)

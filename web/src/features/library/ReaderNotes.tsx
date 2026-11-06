@@ -1,7 +1,11 @@
-import { FileText, Plus } from "lucide-react";
+import { FileText, Plus, WandSparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api, send, type RecordItem, type Source } from "../../shared/api";
 import { Spinner, date } from "../../shared/ui";
+import {
+    AssistantOptions,
+    useAssistantOptions,
+} from "../assistant/AssistantOptions";
 import { RichTextEditor } from "../documents/RichTextEditor";
 
 export function ReaderNotes({
@@ -10,6 +14,7 @@ export function ReaderNotes({
     notes,
     seed,
     onOpen,
+    onGenerate,
     onSaved,
     onError,
 }: {
@@ -18,9 +23,11 @@ export function ReaderNotes({
     notes: RecordItem[];
     seed?: { text: string; key: number };
     onOpen: (note: RecordItem) => void;
+    onGenerate: (skillId: string, modelId: string) => Promise<void>;
     onSaved: () => void;
     onError: (message: string) => void;
 }) {
+    const options = useAssistantOptions(true);
     const cacheKey = `aster:reader-note:${projectId}:${source.id}`;
     const [draft, setDraft] = useState<{
             title: string;
@@ -90,6 +97,26 @@ export function ReaderNotes({
                 >
                     <Plus size={14} />
                     新建
+                </button>
+            </div>
+            <div className="reader-note-generation">
+                <AssistantOptions options={options} reader disabled={busy} />
+                <button
+                    className="button secondary"
+                    disabled={busy}
+                    onClick={async () => {
+                        setBusy(true);
+                        try {
+                            await onGenerate(options.skillId, options.modelId);
+                        } catch (e) {
+                            onError((e as Error).message);
+                        } finally {
+                            setBusy(false);
+                        }
+                    }}
+                >
+                    <WandSparkles size={14} />
+                    生成阅读笔记
                 </button>
             </div>
             {draft && (

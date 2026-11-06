@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from aster.agent.llm import QueryPlan, EvidenceDecision
+from mini_harness.state import AgentState as HarnessState
 
 
 @dataclass
@@ -23,6 +24,7 @@ class AgentState:
     created: list[str] = field(default_factory=list)
     usage: dict = field(default_factory=lambda: {"prompt_tokens": 0, "completion_tokens": 0})
     generation_result: Any = None
+    harness: HarnessState = field(default_factory=HarnessState)
 
     def summary(self):
         return {
@@ -35,4 +37,6 @@ class AgentState:
             "evidence_ids": [hit.evidence.id for hit in self.hits],
             "artifact_ids": self.created,
             "usage": self.usage,
+            "route": self.plan.route if self.plan else None,
+            "execution": self.harness.public(),
         }

@@ -5,6 +5,7 @@ import {
     Download,
     Eye,
     PanelRightOpen,
+    Printer,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -67,12 +68,7 @@ export function DocumentEditor({
         folder: String(fields.folder || ""),
         assets: record?.attachments || [],
         noteType: String(
-            fields.note_type ||
-                (fields.source_id
-                    ? "reading"
-                    : kind === "draft"
-                      ? "writing"
-                      : "note"),
+            fields.note_type || (fields.source_id ? "reading" : "note"),
         ),
         tags: Array.isArray(fields.tags) ? fields.tags.join(", ") : "",
         pinned: !!fields.pinned,
@@ -96,11 +92,24 @@ export function DocumentEditor({
         [saving, setSaving] = useState(false),
         [saved, setSaved] = useState(false),
         [error, setError] = useState(""),
-        [preview, setPreview] = useState(false),
+        [preview, setPreview] = useState(fields.layout === "report"),
         [history, setHistory] = useState<Version[] | null>(null),
         [historical, setHistorical] = useState<Version | null>(null);
     const [properties, setProperties] = useState(false);
     const sheet = useRef<HTMLDivElement>(null);
+    const titleInput = useRef<HTMLTextAreaElement>(null);
+    useEffect(() => {
+        const resize = () => {
+            const input = titleInput.current;
+            if (input) {
+                input.style.height = "auto";
+                input.style.height = `${input.scrollHeight}px`;
+            }
+        };
+        resize();
+        window.addEventListener("resize", resize);
+        return () => window.removeEventListener("resize", resize);
+    }, [draft.title]);
     const latest = useRef(draft);
     latest.current = draft;
     const persisted = useRef(JSON.stringify(initial)),
@@ -340,6 +349,16 @@ export function DocumentEditor({
                 </button>
                 <button
                     className="text-button"
+                    onClick={() => {
+                        setPreview(true);
+                        setTimeout(() => window.print(), 150);
+                    }}
+                >
+                    <Printer size={14} />
+                    PDF
+                </button>
+                <button
+                    className="text-button"
                     onClick={() => setPreview((v) => !v)}
                 >
                     <Eye size={14} />
@@ -396,9 +415,28 @@ export function DocumentEditor({
                             </button>
                         ))}
                 </nav>
-                <div className="document-sheet" ref={sheet}>
-                    <input
+                <div
+                    className={`document-sheet ${draft.noteType === "reading" || fields.layout === "report" ? "reading-report" : ""}`}
+                    ref={sheet}
+                    data-layout={
+                        fields.layout === "report" ? "report" : undefined
+                    }
+                >
+                    {(draft.noteType === "reading" ||
+                        fields.layout === "report") && (
+                        <div className="report-eyebrow">
+                            READING NOTES{" "}
+                            <span>
+                                {fields.origin === "generated"
+                                    ? "自动生成 · 可编辑"
+                                    : "手动记录"}
+                            </span>
+                        </div>
+                    )}
+                    <textarea
+                        ref={titleInput}
                         className="document-title"
+                        rows={2}
                         aria-label="标题"
                         placeholder="未命名文档"
                         value={draft.title}
@@ -407,6 +445,7 @@ export function DocumentEditor({
                         }
                         maxLength={300}
                     />
+                    <h1 className="document-print-title">{draft.title}</h1>
                     <div className="document-meta">
                         <span>
                             {noteTypes[draft.noteType] ||

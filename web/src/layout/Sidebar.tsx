@@ -1,7 +1,7 @@
 import {
     BookOpen,
-    Feather,
-    FlaskConical,
+    Presentation,
+    Network,
     LayoutDashboard,
     MessageSquare,
     Plus,
@@ -15,8 +15,8 @@ const pages = [
     { id: "overview", label: "项目概览", icon: LayoutDashboard },
     { id: "library", label: "文献阅读", icon: BookOpen },
     { id: "notes", label: "笔记", icon: BookOpen },
-    { id: "experiments", label: "实验记录", icon: FlaskConical },
-    { id: "writing", label: "论文写作", icon: Feather },
+    { id: "map", label: "文献地图", icon: Network },
+    { id: "slides", label: "汇报", icon: Presentation },
     { id: "assistant", label: "问答", icon: MessageSquare },
 ];
 
@@ -96,32 +96,23 @@ export function Sidebar({
                 </div>
             </div>
             <nav aria-label="项目功能">
-                {pages
-                    .filter(
-                        (item) =>
-                            item.id !== "experiments" ||
-                            project?.domain !== "general",
-                    )
-                    .map((item) => (
-                        <div className="navigation-item" key={item.id}>
-                            <button
-                                className={page === item.id ? "active" : ""}
-                                onClick={() => onNavigate(item.id)}
-                                disabled={!project}
-                            >
-                                <item.icon size={17} />
-                                {item.id === "writing" &&
-                                project?.domain === "general"
-                                    ? "写作与报告"
-                                    : item.label}
-                                {item.id === "library" && sourcesCount > 0 && (
-                                    <span className="nav-count">
-                                        {sourcesCount}
-                                    </span>
-                                )}
-                            </button>
-                        </div>
-                    ))}
+                {pages.map((item) => (
+                    <div className="navigation-item" key={item.id}>
+                        <button
+                            className={page === item.id ? "active" : ""}
+                            onClick={() => onNavigate(item.id)}
+                            disabled={!project}
+                        >
+                            <item.icon size={17} />
+                            {item.label}
+                            {item.id === "library" && sourcesCount > 0 && (
+                                <span className="nav-count">
+                                    {sourcesCount}
+                                </span>
+                            )}
+                        </button>
+                    </div>
+                ))}
             </nav>
             <div className="sidebar-bottom">
                 <button onClick={onTrash}>

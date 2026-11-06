@@ -43,6 +43,7 @@ def create_app(settings=None):
         diagnostics,
         management,
         preferences,
+        slides,
     )
 
     for routes in (
@@ -53,6 +54,7 @@ def create_app(settings=None):
         diagnostics,
         management,
         preferences,
+        slides,
     ):
         routes.configure(app)
 
@@ -138,7 +140,6 @@ def create_app(settings=None):
                 "key": e.key,
                 "label": e.label,
                 "artifact_kinds": e.artifact_kinds,
-                "experiments": e.experiments,
             }
             for e in EXTENSIONS.values()
         ]

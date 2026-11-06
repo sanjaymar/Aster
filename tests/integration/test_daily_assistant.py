@@ -12,7 +12,6 @@ import pytest
 from openai.types.chat import ChatCompletionMessage
 import test_platform as fixtures
 
-from aster.agent.assistant import AssistantTools, SearchKnowledge, ReadEvidence
 from aster.agent.trace import PipelineTrace
 from mini_harness.agent import MiniHarnessAgent
 
@@ -155,8 +154,8 @@ def test_empty_knowledge_base_can_discuss_without_forcing_retrieval(client, monk
 
     def response(agent, _client, cfg):
         names = set(agent.regis)
-        assert names == {"search_knowledge", "read_evidence", "list_papers", "load_skill"}
-        assert "RAG是查资料的工具" in agent.message[0]["content"]
+        assert names == set()
+        assert "通用讨论" in agent.message[0]["content"]
         text = "可以先把你的想法写成一个可证伪的假设，再列出对照和需要记录的观察。"
         agent._emit("text", text=text)
         return SimpleNamespace(
@@ -166,6 +165,18 @@ def test_empty_knowledge_base_can_discuss_without_forcing_retrieval(client, monk
             usage=SimpleNamespace(prompt_tokens=100, completion_tokens=30),
         ), None
 
+    from aster.agent.llm import ModelGateway, QueryPlan
+
+    monkeypatch.setattr(
+        ModelGateway,
+        "structured",
+        lambda *_a, **_k: (
+            QueryPlan(
+                route="discuss", intent="explain", standalone_query="记录想法", queries=["记录想法"]
+            ),
+            {},
+        ),
+    )
     monkeypatch.setattr(MiniHarnessAgent, "_request_agent", response)
     monkeypatch.setattr(
         client.app.state.manager.retriever,
@@ -182,43 +193,18 @@ def test_empty_knowledge_base_can_discuss_without_forcing_retrieval(client, monk
             break
         time.sleep(0.02)
     assert row["status"] == "completed", row
-    assert row["result"]["engine"] == "assistant" and not row["result"]["calls_by_tool"]
+    assert row["result"]["engine"] == "pipeline" and not row["result"]["calls_by_tool"]
     assert not row["result"]["artifact_ids"]
     trace = client.get("/api/runs/" + run["id"] + "/trace").json()
-    assert {s["name"] for s in trace["stages"]} == {"Assistant", "Memory"}
+    assert {s["name"] for s in trace["stages"]} == {
+        "Guardrails",
+        "NLU",
+        "Retrieve",
+        "Rerank",
+        "Reflect",
+        "Generate",
+        "Memory",
+    }
     assert trace["turn"]["usage"] == {"prompt_tokens": 100, "completion_tokens": 30}
     events = client.get("/api/runs/" + run["id"] + "/events").text
     assert '"kind": "text"' not in events and '"kind": "answer_verified"' in events
-
-
-def test_optional_rag_respects_pinned_versions_and_project_boundaries(client, monkeypatch):
-    pid, other = fixtures.project(client), fixtures.project(client, "private")
-    source = fixtures.source(client, pid, "Original pooled QC injections every five samples.")
-    first = client.get(f"/api/projects/{pid}/sources/{source['id']}/pages").json()
-    fixtures.source(client, pid, "Changed: no pooled QC injections.", source["id"])
-    foreign = fixtures.source(client, other, "Secret other project.")
-    span = client.get(f"/api/projects/{other}/sources/{foreign['id']}/pages").json()["pages"][0]
-    manager = client.app.state.manager
-    manager.retriever.settings = replace(manager.retriever.settings, retrieval_mode="lexical")
-    monkeypatch.setattr(manager, "_submit", lambda _: None)
-    run = client.post(
-        f"/api/projects/{pid}/runs",
-        json={
-            "prompt": "QC",
-            "source_ids": [source["id"]],
-            "source_version_ids": [first["version"]["id"]],
-        },
-    ).json()
-    trace = PipelineTrace(manager.db, run["id"], lambda *_: None)
-    tools = AssistantTools(
-        manager.service, manager.retriever, pid, run["context"]["corpus_snapshot"], [], trace
-    )
-    hits = json.loads(tools.search(SearchKnowledge(query="pooled QC injections")))["hits"]
-    assert hits and all(h["version_id"] == first["version"]["id"] for h in hits)
-    assert "Original" in hits[0]["text"]
-    with pytest.raises(Exception, match="范围"):
-        tools.read(ReadEvidence(kind="S", id=span["id"]))
-    with pytest.raises(Exception, match="引用"):
-        tools.validate_citations("Fabricated [[S:" + span["id"] + "]]")
-    tools.validate_citations(hits[0]["citation"])
-    tools.validate_citations("Nested source reference [[S:" + first["pages"][0]["id"] + "]]")

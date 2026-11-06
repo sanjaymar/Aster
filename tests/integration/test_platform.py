@@ -75,7 +75,7 @@ def test_migrations_project_extensions_and_no_model_dependency(client):
     assert client.get(f"/api/projects/{pid}/overview").json()["counts"]["sources"] == 0
     general = project(client, "课程研究", "general")
     r = client.post(f"/api/projects/{general}/experiments", json={"title": "不能创建实验"})
-    assert r.status_code == 400
+    assert r.status_code == 404
     assert client.get("/api/health").json()["status"] == "ok"
 
 
@@ -118,47 +118,13 @@ def test_invalid_and_cross_project_citations_are_rolled_back(client):
     assert r.status_code == 404
     r = client.post(
         f"/api/projects/{p2}/artifacts",
-        json={"title": "虚构引用", "content": "[[V:" + "a" * 32 + "]]", "kind": "draft"},
+        json={"title": "虚构引用", "content": "[[V:" + "a" * 32 + "]]", "kind": "note"},
     )
     assert r.status_code == 404
     assert client.get(f"/api/projects/{p2}/artifacts").json() == []
     note(client, p1, "有效 [[S:" + span["id"] + "]]")
     with client.app.state.db.session() as s:
         assert len(list(s.scalars(select(EvidenceLink)))) == 1
-
-
-def test_experiment_result_stays_on_original_plan(client):
-    pid = project(client)
-    first = client.post(
-        f"/api/projects/{pid}/experiments",
-        json={"title": "对照实验", "content": "第一版方案", "fields": {"hypothesis": "存在差异"}},
-    ).json()
-    result = client.post(
-        f"/api/projects/{pid}/experiments/{first['id']}/results",
-        json={
-            "plan_version_id": first["plan"]["version"]["id"],
-            "title": "第一次观察",
-            "content": "原始观察：尚不能得出差异结论。",
-        },
-    )
-    assert result.status_code == 201, result.text
-    edited = client.put(
-        f"/api/projects/{pid}/experiments/{first['id']}",
-        json={"title": "对照实验", "content": "第二版方案", "fields": {}, "expected_revision": 1},
-    )
-    assert edited.status_code == 200, edited.text
-    stored = client.get(f"/api/projects/{pid}/experiments").json()[0]
-    assert stored["plan"]["revision"] == 2 and stored["runs"][0]["plan_version"] == 1
-    other = project(client, "不同项目")
-    invalid = client.post(
-        f"/api/projects/{other}/experiments/{first['id']}/results",
-        json={
-            "plan_version_id": first["plan"]["version"]["id"],
-            "title": "跨项目",
-            "content": "禁止",
-        },
-    )
-    assert invalid.status_code == 404
 
 
 def test_csv_and_chinese_search(client):
@@ -247,25 +213,9 @@ def test_harness_task_events_drafts_and_recovery(client, monkeypatch):
     def response(self, client, cfg):
         assert self.message[0]["role"] == "system"
         assert sum(m["role"] == "system" for m in self.message) == 1
-        if self.message[-1]["role"] == "user":
-            m = ChatCompletionMessage(
-                role="assistant",
-                content=None,
-                tool_calls=[
-                    {
-                        "id": "call-read",
-                        "type": "function",
-                        "function": {
-                            "name": "read_evidence",
-                            "arguments": json.dumps({"kind": "S", "id": span["id"]}),
-                        },
-                    }
-                ],
-            )
-        else:
-            text = "根据原文，应分别记录控制变量与数据。[[S:" + span["id"] + "]]"
-            self._emit("text", text=text)
-            m = ChatCompletionMessage(role="assistant", content=text)
+        text = "根据原文，应分别记录控制变量与实验数据。[[S:" + span["id"] + "]]"
+        self._emit("text", text=text)
+        m = ChatCompletionMessage(role="assistant", content=text)
         return SimpleNamespace(
             choices=[SimpleNamespace(message=m)],
             usage=SimpleNamespace(prompt_tokens=200, completion_tokens=30),
@@ -274,7 +224,32 @@ def test_harness_task_events_drafts_and_recovery(client, monkeypatch):
     from aster.models import clients
 
     monkeypatch.setattr(clients, "OpenAI", FakeClient)
-    monkeypatch.setattr(runtime.MiniHarnessAgent, "_request_agent", response)
+    from mini_harness.agent import MiniHarnessAgent
+    from aster.agent.llm import ModelGateway, QueryPlan, EvidenceDecision, AnswerAudit, ClaimCheck
+
+    def structured(self, schema, instruction, payload, maximum=1200):
+        if schema is QueryPlan:
+            return QueryPlan(
+                route="context", intent="explain", standalone_query="整理笔记", queries=["控制变量"]
+            ), {}
+        if schema is EvidenceDecision:
+            return EvidenceDecision(action="answer", reason="选段充分"), {}
+        if schema is AnswerAudit:
+            return AnswerAudit(
+                claims=[
+                    ClaimCheck(
+                        text="应分别记录控制变量与实验数据",
+                        citations=["[[S:" + span["id"] + "]]"],
+                        verdict="supported",
+                        reason="原文说明",
+                    )
+                ],
+                summary="supported",
+            ), {}
+        raise AssertionError(schema)
+
+    monkeypatch.setattr(ModelGateway, "structured", structured)
+    monkeypatch.setattr(MiniHarnessAgent, "_request_agent", response)
     manager = client.app.state.manager
     manager.save_model_settings(
         {
@@ -287,8 +262,9 @@ def test_harness_task_events_drafts_and_recovery(client, monkeypatch):
     r = client.post(
         f"/api/projects/{pid}/runs",
         json={
-            "prompt": "整理这份资料的笔记",
-            "engine": "harness",
+            "prompt": "整理这份资料的笔记 [[S:" + span["id"] + "]]",
+            "engine": "pipeline",
+            "retrieval_policy": "off",
             "mode": "reading",
             "source_ids": [src["id"]],
         },
@@ -301,10 +277,10 @@ def test_harness_task_events_drafts_and_recovery(client, monkeypatch):
             break
         time.sleep(0.02)
     assert row["status"] == "completed", row
-    assert row["result"]["calls_by_tool"]["read_evidence"] == 1
+    assert row["result"]["pipeline"]["stages"] == 7
     assert len(row["result"]["artifact_ids"]) == 1
     events = client.get("/api/runs/" + run_id + "/events").text
-    assert "tool_start" in events and "artifact" in events and "event: finished" in events
+    assert "stage_start" in events and "artifact" in events and "event: finished" in events
     records = client.get(f"/api/projects/{pid}/artifacts").json()
     assert records[0]["version"]["author"] == "assistant" and records[0]["status"] == "draft"
     conv = r.json()["conversation_id"]

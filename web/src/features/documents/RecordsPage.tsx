@@ -1,4 +1,6 @@
-import { Folder, Plus, Search, LayoutGrid, List } from "lucide-react";
+import { Folder, Plus, Search, LayoutGrid, List, WandSparkles } from "lucide-react";
+import { GenerateNote } from "./GenerateNote";
+import type { ResearchTask } from "../workspace/Home";
 import {
     useEffect,
     useMemo,
@@ -6,27 +8,26 @@ import {
     type Dispatch,
     type SetStateAction,
 } from "react";
-import type { Bundle, Project, RecordItem } from "../../shared/api";
+import type { Bundle, RecordItem } from "../../shared/api";
 import type { EditorState } from "../../shared/types";
 import { RecordCollection } from "./RecordCollection";
 import { templates, noteTypes } from "./templates";
 export function RecordsPage({
-    page,
-    project,
     bundle,
     artifactIds,
     setArtifactIds,
     setEditor,
     openRecord,
+    onStart, onError,
 }: {
-    page: string;
-    project: Project;
     bundle: Bundle;
     artifactIds: string[];
     setArtifactIds: Dispatch<SetStateAction<string[]>>;
     setEditor: Dispatch<SetStateAction<EditorState | null>>;
     openRecord: (record: RecordItem) => void;
+    onStart: (task: ResearchTask) => Promise<void>; onError: (message:string)=>void;
 }) {
+    const [generate,setGenerate]=useState(false);
     const [query, setQuery] = useState(""),
         [folder, setFolder] = useState(""),
         [template, setTemplate] = useState(""),
@@ -39,12 +40,8 @@ export function RecordsPage({
         setTemplate("");
         setType("");
         setTag("");
-    }, [page]);
-    const records = bundle.records.filter((record) =>
-        page === "notes"
-            ? record.kind === "note"
-            : ["draft", "report"].includes(record.kind),
-    );
+    }, [bundle.sources]);
+    const records = bundle.records.filter((record) => record.kind === "note");
     const folders = [
         ...new Set(
             records
@@ -77,24 +74,20 @@ export function RecordsPage({
     function create() {
         const selected = templates.find((t) => t.id === template);
         setEditor({
-            kind: page === "notes" ? "note" : "draft",
+            kind: "note",
             content: selected?.content || "",
             fields: {
-                note_type:
-                    selected?.type || (page === "notes" ? "note" : "writing"),
+                note_type: selected?.type || "note",
                 folder,
             },
         });
     }
     return (
         <>
+            {generate&&<GenerateNote sources={bundle.sources} onStart={onStart} onClose={()=>setGenerate(false)} onError={onError}/>}
             <div className="page-heading">
                 <h1>
-                    {page === "notes"
-                        ? "笔记"
-                        : project.domain === "general"
-                          ? "写作"
-                          : "论文写作"}
+                    笔记
                     <small className="heading-count">{records.length}</small>
                 </h1>
                 <div className="inline">
@@ -104,36 +97,29 @@ export function RecordsPage({
                         onChange={(e) => setTemplate(e.target.value)}
                     >
                         <option value="">空白文档</option>
-                        {templates
-                            .filter((t) =>
-                                page === "notes"
-                                    ? t.type !== "writing" && t.id !== "labnote"
-                                    : t.type === "writing",
-                            )
-                            .map((item) => (
-                                <option key={item.id} value={item.id}>
-                                    {item.label}
-                                </option>
-                            ))}
+                        {templates.map((item) => (
+                            <option key={item.id} value={item.id}>
+                                {item.label}
+                            </option>
+                        ))}
                     </select>
-                    <button className="button primary" onClick={create}>
+                    <button className="button secondary" onClick={create}>
                         <Plus size={15} />
-                        {page === "notes" ? "新建笔记" : "新建文档"}
+                        手动新建
                     </button>
+                    <button className="button primary" onClick={()=>setGenerate(true)}><WandSparkles size={15}/>自动生成</button>
                 </div>
             </div>
             <div className="template-gallery" aria-label="文档模板">
                 {templates
                     .filter((t) =>
-                        page === "notes"
-                            ? [
-                                  "reading",
-                                  "idea",
-                                  "meeting",
-                                  "method",
-                                  "comparison",
-                              ].includes(t.id)
-                            : t.type === "writing",
+                        [
+                            "reading",
+                            "idea",
+                            "meeting",
+                            "method",
+                            "comparison",
+                        ].includes(t.id),
                     )
                     .map((t) => (
                         <button
@@ -141,7 +127,7 @@ export function RecordsPage({
                             className="template-card"
                             onClick={() =>
                                 setEditor({
-                                    kind: page === "notes" ? "note" : "draft",
+                                    kind: "note",
                                     content: t.content,
                                     fields: { note_type: t.type, folder },
                                 })
@@ -252,7 +238,7 @@ export function RecordsPage({
                             )
                         }
                         onOpen={openRecord}
-                        kind={page === "notes" ? "note" : "draft"}
+                        kind={"note"}
                         onNew={create}
                     />
                 </section>

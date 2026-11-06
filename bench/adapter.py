@@ -88,6 +88,7 @@ class MiniHarnessAgent(BaseInstalledAgent):
             "MINI_HARNESS_API_KEY_ENV": key_env,
             "MINI_HARNESS_MODEL": self._model_id,
             "PYTHONUNBUFFERED": "1",
+            "MINI_HARNESS_CONTEXT_POLICY": settings.get("MINI_HARNESS_CONTEXT_POLICY", "adaptive"),
         }
         options = {
             "BASE_URL": base_url,

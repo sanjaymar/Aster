@@ -133,19 +133,6 @@ export type SourceData = {
     }[];
     pages: Span[];
 };
-export type Experiment = {
-    id: string;
-    title: string;
-    plan: RecordItem;
-    runs: {
-        id: string;
-        conditions: string;
-        plan_version: number;
-        plan_version_id: string;
-        result: RecordItem;
-        created_at: string;
-    }[];
-};
 export type Run = {
     id: string;
     project_id?: string;
@@ -164,7 +151,6 @@ export type Run = {
     context?: Record<string, unknown>;
     transcript?: unknown[];
 };
-export type ExperimentResult = Experiment["runs"][number];
 export type ChatMessage = { id: string; role: string; content: string };
 export type Conversation = { id: string; title: string };
 export type Evidence = {
@@ -215,16 +201,18 @@ export type Skill = {
     name: string;
     description: string;
     instructions: string;
-    category: "reading" | "thinking" | "experiment" | "writing" | "custom";
+    category: "reading" | "thinking" | "slides" | "custom";
     source_url: string;
     enabled: boolean;
     builtin: boolean;
     origin?: string;
+    output?: string;
+    requires?: string;
+    license?: string;
 };
 export type Bundle = {
     sources: Source[];
     records: RecordItem[];
-    experiments: Experiment[];
     runs: Run[];
     conversations: Conversation[];
     overview: Overview;
@@ -232,7 +220,6 @@ export type Bundle = {
 export const emptyBundle: Bundle = {
     sources: [],
     records: [],
-    experiments: [],
     runs: [],
     conversations: [],
     overview: { counts: {}, recent: [] },

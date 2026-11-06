@@ -1,23 +1,19 @@
-"""科研问答主线：七阶段编排。模型格式在 llm.py，生成核查在 generation.py。"""
+"""One seven-stage pipeline for reading, discussion, notes and evaluations."""
 
-import re
 from dataclasses import asdict
-
+from dataclasses import replace
 from aster.domain.models import AgentRun
+from aster.domain.common import CITATION
 from aster.agent.trace import PipelineTrace
 from aster.agent.memory import Memory
 from aster.retrieval.corpus import Corpus
-from aster.agent.llm import (
-    QueryPlan,
-    EvidenceDecision,
-    ModelGateway,
-    NLU_PROMPT,
-    REFLECT_PROMPT,
-    DISCUSSION_REFLECT_PROMPT,
-)
+from aster.retrieval.engine import Hit
+from aster.agent.llm import EvidenceDecision, ModelGateway
 from aster.agent.generation import AnswerGenerator, GenerationRequest
-from aster.domain.service import CITATION
 from aster.agent.state import AgentState
+from aster.agent.planning import history, excerpts, plan_question
+from aster.agent.search import gather
+from aster.agent.discussion import discuss
 
 
 class ResearchPipeline:
@@ -35,28 +31,30 @@ class ResearchPipeline:
             "memory": True,
             **(ablation or {}),
         }
-        trace = PipelineTrace(self.db, run_id, emit, cancelled)
         gateway = gateway or ModelGateway(client, cfg, cancelled)
-        with self.db.session() as s:
-            run = s.get(AgentRun, run_id)
+        with self.db.session() as session:
+            row = session.get(AgentRun, run_id)
             project_id, conversation_id, prompt, context, mode = (
-                run.project_id,
-                run.conversation_id,
-                run.prompt,
-                run.context,
-                run.mode,
+                row.project_id,
+                row.conversation_id,
+                row.prompt,
+                row.context,
+                row.mode,
             )
-        discussion = context.get("response_style") == "discussion"
         snapshot = context["corpus_snapshot"]
         state = AgentState(run_id, project_id, conversation_id, prompt, snapshot)
+
+        def event(kind, data):
+            state.harness.record(kind, data)
+            emit(kind, data)
+
+        trace = PipelineTrace(self.db, run_id, event, cancelled)
 
         def add_usage(value):
             for key in state.usage:
                 state.usage[key] += value.get(key, 0)
 
-        with trace.stage(
-            "Guardrails", {"scope": snapshot, "project_id": project_id, "options": options}
-        ) as out:
+        with trace.stage("Guardrails", {"scope": snapshot, "options": options}) as out:
             items = self.corpus.items(project_id, snapshot)
             state.allowed = {i.id: i for i in items}
             catalog = list(
@@ -70,10 +68,12 @@ class ResearchPipeline:
                     for i in items
                 }.values()
             )
+            supplied = excerpts(self.service, project_id, prompt, snapshot, items)
+            state.allowed.update({i.id: i for i in supplied})
             out.update(
                 eligible_chunks=sum(i.kind == "C" for i in items),
                 eligible_records=sum(i.kind == "V" for i in items),
-                catalog=catalog,
+                supplied=len(supplied),
             )
         state.memory = self.memory.latest(project_id, conversation_id) if options["memory"] else {}
         if options["memory"]:
@@ -83,238 +83,120 @@ class ResearchPipeline:
                     project_id, snapshot.get("artifact_version_ids", [])
                 )[:8],
             }
-        if not items:
-            state.answer = (
-                "当前没有可读取的材料。请先选择文献或记录，或将检索范围切换为“本项目资料”。"
+        messages = history(self.service, conversation_id)
+        context = {**context, "mode": mode}
+        with trace.stage("NLU", {"question": prompt, "memory": state.memory}) as out:
+            state.plan, usage = plan_question(
+                gateway, state, context, catalog, messages, options["rewrite"]
             )
+            add_usage(usage)
+            # Explicit policy is enforced in code, not only a prompt preference.
+            if context.get("retrieval_policy") == "off":
+                state.plan.route = "context" if supplied else "discuss"
+                options["no_search"] = True
+            elif (
+                context.get("response_style", "grounded") == "grounded"
+                and state.plan.route == "discuss"
+            ):
+                state.plan.route = "retrieve"
+            if state.plan.route == "context" and not supplied:
+                state.plan.route = "retrieve" if items else "discuss"
+            if mode in {"reading", "slides"} and items and not options.get("no_search"):
+                state.plan.route = "retrieve"
+            out.update(plan=state.plan.model_dump(), usage=usage)
+        if state.plan.needs_clarification or state.plan.intent == "out_of_scope":
             state.decision = EvidenceDecision(
-                action="clarify", reason="empty_scope", missing_facets=["可读取的文献或记录"]
+                action="clarify" if state.plan.needs_clarification else "refuse",
+                reason=state.plan.clarification or "无法按此要求提供可靠的回答",
             )
-            for name in ["NLU", "Retrieve", "Rerank", "Reflect", "Generate"]:
-                trace.skip(name, "empty_scope")
+            for stage in ["Retrieve", "Rerank", "Reflect"]:
+                trace.skip(stage, state.decision.action)
+        elif state.plan.route == "discuss":
+            trace.skip("Retrieve", "general_discussion")
+            trace.skip("Rerank", "general_discussion")
+            with trace.stage("Reflect", {"route": "discuss"}) as out:
+                state.decision = EvidenceDecision(
+                    action="answer", reason="通用讨论；不声称有论文证据"
+                )
+                out.update(decision=state.decision.model_dump(), audit="general_knowledge")
+        else:
+            state.hits = [Hit(i, {}) for i in supplied]
+            if mode in {"reading", "slides"} and not options.get("no_search"):
+                options["reading_sources"] = context.get("source_ids", [])
+            gather(
+                state,
+                self.retriever,
+                trace,
+                gateway,
+                options,
+                context.get("response_style") in {"auto", "discussion"},
+                add_usage,
+                direct=state.plan.route == "context",
+            )
+        if state.decision.action != "answer":
+            state.answer = state.decision.reason
+            if state.decision.missing_facets:
+                state.answer += "\n\n待补充：" + "；".join(state.decision.missing_facets)
+            trace.skip("Generate", state.decision.action)
         else:
             with trace.stage(
-                "NLU", {"question": prompt, "memory": state.memory, "catalog": catalog}
+                "Generate",
+                {"route": state.plan.route, "evidence_ids": [h.evidence.id for h in state.hits]},
             ) as out:
-                if options["rewrite"]:
-                    state.plan, tokens = gateway.structured(
-                        QueryPlan,
-                        NLU_PROMPT
-                        + (
-                            "\n用户在讨论尚未实施的研究思路。改写时保留计划、假设或建议的语气，不得把计划改写成已发生的实验。"
-                            if discussion
-                            else ""
+                if state.plan.route == "discuss":
+                    state.answer, state.generation_result = discuss(
+                        self.service, state, context, messages, client, cfg, event, cancelled
+                    )
+                    out.update(audit="general_knowledge", answer=state.answer)
+                else:
+                    generated = self.generator.run(
+                        GenerationRequest(
+                            run_id,
+                            project_id,
+                            state.plan.standalone_query,
+                            prompt,
+                            mode,
+                            snapshot,
+                            {h.evidence.id: h.evidence for h in state.hits}
+                            if options.get("no_search")
+                            else state.allowed,
+                            state.hits,
+                            state.memory,
+                            state.decision,
+                            context.get("response_style") in {"auto", "discussion"},
+                            context.get("skills", []),
+                            context.get("skill_id"),
+                            messages,
+                            not options.get("no_search", False),
                         ),
-                        {
-                            "question": prompt,
-                            "catalog": catalog,
-                            "scope": snapshot["scope"],
-                            "memory": state.memory,
-                        },
-                        1000,
+                        client,
+                        replace(cfg, max_tokens_main=max(cfg.max_tokens_main, 5000))
+                        if mode in {"reading", "slides"}
+                        else cfg,
+                        gateway,
+                        event,
+                        cancelled,
                     )
-                    add_usage(tokens)
-                    out["usage"] = tokens
-                else:
-                    state.plan = QueryPlan(
-                        intent="lookup", standalone_query=prompt, queries=[prompt]
+                    state.answer, state.claims, state.generation_result, state.decision = (
+                        generated.answer,
+                        generated.claims,
+                        generated.harness,
+                        generated.decision,
                     )
-                unknown = set(state.plan.targets) - {i.source_id for i in items}
-                vague = re.search(
-                    r"它(?!们)|这个方法|该方法|那个方法|\bit\b|\bthis method\b", prompt, re.I
-                )
-                named = any(
-                    entity and entity.lower() in prompt.lower()
-                    for entity in state.plan.resolved_entities
-                )
-                if (
-                    state.plan.intent != "out_of_scope"
-                    and vague
-                    and len(catalog) > 1
-                    and not state.memory.get("focus")
-                    and not named
-                ):
-                    state.plan.needs_clarification = True
-                    state.plan.clarification = (
-                        "你指的是哪篇文献或哪个方法？请给出名称，或明确选择一个比较对象。"
+                    add_usage(generated.usage)
+                    out.update(generated.trace)
+                if cancelled():
+                    raise KeyboardInterrupt
+                if state.decision.action == "answer" and mode != "chat":
+                    record = self.save_output(state, context, mode, gateway, add_usage)
+                    state.created.append(record["id"])
+                    event(
+                        "artifact",
+                        {"id": record["id"], "title": record["title"], "kind": record["kind"]},
                     )
-                    out["clarification_rule"] = "ungrounded_reference_without_history"
-                if unknown:
-                    state.plan.needs_clarification = True
-                    state.plan.clarification = (
-                        "你指的是当前所选范围之外的资料吗？请重新选择比较对象。"
-                    )
-                out["plan"] = state.plan.model_dump()
-            if state.plan.intent == "out_of_scope" or state.plan.needs_clarification:
-                state.decision = EvidenceDecision(
-                    action="clarify" if state.plan.needs_clarification else "refuse",
-                    reason=state.plan.clarification or "问题超出了当前科研资料问答范围",
-                )
-                state.answer = state.decision.reason
-                for name in ["Retrieve", "Rerank", "Reflect", "Generate"]:
-                    trace.skip(name, state.decision.action)
-            else:
-                queries = state.plan.queries
-                for attempt in range(1, 3):
-                    gathered = {}
-                    with trace.stage(
-                        "Retrieve",
-                        {
-                            "queries": queries,
-                            "strategy": options.get("strategy", "hybrid"),
-                            "scope": snapshot,
-                        },
-                        attempt,
-                    ) as out:
-                        raw_results = []
-                        for query in queries[:3]:
-                            result, meta = self.retriever.search(
-                                project_id,
-                                snapshot,
-                                query,
-                                top_k=24,
-                                strategy=options.get("strategy", "hybrid"),
-                                rerank=False,
-                            )
-                            for hit in result:
-                                gathered.setdefault(hit.evidence.id, hit)
-                            raw_results.append(
-                                {
-                                    "query": query,
-                                    "retrieval": meta,
-                                    "hits": [h.public(False) for h in result],
-                                }
-                            )
-                        for hit in state.hits:
-                            gathered.setdefault(hit.evidence.id, hit)
-                        out["searches"] = raw_results
-                    with trace.stage(
-                        "Rerank",
-                        {"candidate_ids": list(gathered), "question": state.plan.standalone_query},
-                        attempt,
-                    ) as out:
-                        ranked = list(gathered.values())
-                        if (
-                            options["rerank"]
-                            and self.retriever.status()["backend"] == "hybrid"
-                            and ranked
-                        ):
-                            scores = self.retriever.models.rerank(
-                                state.plan.standalone_query, [h.evidence.text for h in ranked]
-                            )
-                            for hit, score in zip(ranked, scores, strict=True):
-                                hit.scores["rerank"] = float(score)
-                            ranked.sort(key=lambda h: -h.scores["rerank"])
-                            out["backend"] = "cross_encoder"
-                        else:
-                            out["backend"] = "rrf"
-                            out["status"] = "skipped" if not options["rerank"] else "completed"
-                        # Reserve evidence for each explicitly compared paper.
-                        diverse = []
-                        for target in state.plan.targets:
-                            candidate = next(
-                                (h for h in ranked if h.evidence.source_id == target), None
-                            )
-                            if candidate and candidate not in diverse:
-                                diverse.append(candidate)
-                        state.hits = (diverse + [h for h in ranked if h not in diverse])[:8]
-                        out["hits"] = [h.public(False) for h in state.hits]
-                    with trace.stage(
-                        "Reflect",
-                        {
-                            "question": state.plan.standalone_query,
-                            "evidence": [h.public() for h in state.hits],
-                        },
-                        attempt,
-                    ) as out:
-                        if not state.hits:
-                            state.decision = EvidenceDecision(
-                                action="retrieve_more" if attempt == 1 else "refuse",
-                                reason="没有召回可用于回答的证据",
-                                missing_facets=[state.plan.standalone_query],
-                                queries=[state.plan.standalone_query],
-                            )
-                        elif options["reflect"]:
-                            state.decision, tokens = gateway.structured(
-                                EvidenceDecision,
-                                DISCUSSION_REFLECT_PROMPT if discussion else REFLECT_PROMPT,
-                                {
-                                    "question": state.plan.standalone_query,
-                                    "targets": state.plan.targets,
-                                    "evidence": [h.public() for h in state.hits],
-                                    "attempt": attempt,
-                                    "remaining_retrievals": 2 - attempt,
-                                },
-                                1000,
-                            )
-                            add_usage(tokens)
-                            out["usage"] = tokens
-                        else:
-                            state.decision = EvidenceDecision(
-                                action="answer", reason="reflection_ablation"
-                            )
-                        if state.decision.action == "retrieve_more" and attempt == 2:
-                            state.decision = state.decision.model_copy(
-                                update={
-                                    "action": "refuse",
-                                    "reason": "补充检索后证据仍不足：" + state.decision.reason,
-                                }
-                            )
-                        out["decision"] = state.decision.model_dump()
-                    if state.decision.action != "retrieve_more":
-                        break
-                    queries = state.decision.queries or [state.plan.standalone_query]
-                if state.decision.action != "answer":
-                    state.answer = (
-                        "需要澄清："
-                        if state.decision.action == "clarify"
-                        else "目前无法根据所选材料可靠回答："
-                    ) + state.decision.reason
-                    if state.decision.missing_facets:
-                        state.answer += "\n\n待补充：" + "；".join(state.decision.missing_facets)
-                    trace.skip("Generate", state.decision.action)
-                else:
-                    with trace.stage(
-                        "Generate",
-                        {
-                            "question": state.plan.standalone_query,
-                            "evidence_ids": [h.evidence.id for h in state.hits],
-                        },
-                    ) as out:
-                        generated = self.generator.run(
-                            GenerationRequest(
-                                run_id=run_id,
-                                project_id=project_id,
-                                question=state.plan.standalone_query,
-                                prompt=prompt,
-                                mode=mode,
-                                snapshot=snapshot,
-                                allowed=state.allowed,
-                                hits=state.hits,
-                                memory=state.memory,
-                                decision=state.decision,
-                                discussion=discussion,
-                            ),
-                            client,
-                            cfg,
-                            gateway,
-                            emit,
-                            cancelled,
-                        )
-                        state.answer, state.claims, state.created = (
-                            generated.answer,
-                            generated.claims,
-                            generated.artifact_ids,
-                        )
-                        state.generation_result = generated.harness
-                        state.decision = generated.decision
-                        add_usage(generated.usage)
-                        out.update(generated.trace)
-        with trace.stage(
-            "Memory", {"enabled": options["memory"], "answerability": state.decision.action}
-        ) as out:
+        with trace.stage("Memory", {"enabled": options["memory"]}) as out:
             if options["memory"]:
-                refs = [f"[[{typ}:{key}]]" for typ, key in CITATION.findall(state.answer)]
+                refs = [f"[[{kind}:{key}]]" for kind, key in CITATION.findall(state.answer)]
                 out["snapshot"] = self.memory.update(
                     project_id,
                     conversation_id,
@@ -323,7 +205,7 @@ class ResearchPipeline:
                     state.plan,
                     state.decision,
                     refs,
-                    {i.citation for i in items},
+                    {i.citation for i in state.allowed.values()},
                 )
             else:
                 out.update(status="skipped", reason="memory_ablation")
@@ -340,3 +222,26 @@ class ResearchPipeline:
             "claims": [c.model_dump() for c in state.claims],
             "harness": asdict(state.generation_result) if state.generation_result else None,
         }
+
+    def save_output(self, state, context, mode, gateway, add_usage):
+        sources = context.get("source_ids", [])
+        fields = {
+            "source_id": sources[0] if len(sources) == 1 else None,
+            "source_ids": sources,
+            "skill_id": context.get("skill_id"),
+            "note_type": "reading",
+            "run_id": state.run_id,
+        }
+        if "figure_versions" in context:
+            fields["figure_versions"] = context["figure_versions"]
+        if mode == "slides":
+            from aster.slides.service import Slides
+
+            record, usage = Slides(self.service).generate(
+                state.project_id, state.question, state.answer, state.allowed, gateway, fields
+            )
+            add_usage(usage)
+            return record
+        from aster.reading.report import create
+
+        return create(self.service, state, fields)

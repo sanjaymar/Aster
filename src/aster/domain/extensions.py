@@ -6,12 +6,9 @@ class Extension:
     key: str
     label: str
     artifact_kinds: tuple[str, ...]
-    experiments: bool = False
 
 
 EXTENSIONS = {
-    "research": Extension(
-        "research", "科研研究", ("note", "draft", "report", "plan", "result", "labnote"), True
-    ),
-    "general": Extension("general", "通用知识项目", ("note", "draft", "report")),
+    "research": Extension("research", "研究文献", ("note", "deck")),
+    "general": Extension("general", "自定义知识库", ("note", "deck")),
 }

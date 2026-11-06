@@ -9,17 +9,17 @@ services:
     network_mode: host
     command: ["--host", "${ASTER_HOST:-127.0.0.1}", "--port", "${ASTER_PORT:-8765}"]
     environment:
-      ASTER_DATA_DIR: /data
+      ASTER_HOME: /data
       ASTER_MODEL_URL: ${ASTER_MODEL_URL:-http://127.0.0.1:8000/v1}
       ASTER_MODEL: ${ASTER_MODEL:-auto}
       ASTER_MODEL_KEY: ${ASTER_MODEL_KEY:-local}
       ASTER_ACCESS_TOKEN: ${ASTER_ACCESS_TOKEN:-}
-      ASTER_DATABASE_URL: ${ASTER_DATABASE_URL:-sqlite:////data/zhixu.db}
+      ASTER_DATABASE_URL: ${ASTER_CONTAINER_DATABASE_URL:-sqlite:////data/library/aster.db}
       ASTER_RETRIEVAL_MODE: ${ASTER_RETRIEVAL_MODE:-auto}
       ASTER_RETRIEVAL_DEVICE: cpu
       ASTER_MODEL_THREADS: ${ASTER_MODEL_THREADS:-4}
     volumes:
-      - zhixu-data:/data
+      - ${ASTER_HOME:-./data}:/data
     restart: unless-stopped
   postgres:
     image: postgres:17-alpine
@@ -37,6 +37,4 @@ services:
       timeout: 3s
       retries: 10
 volumes:
-  # Retain the existing volume name to preserve previous installations.
-  zhixu-data:
   postgres-data:

@@ -4,7 +4,8 @@ import time
 
 from openai import OpenAI, LengthFinishReasonError
 from pathlib import Path
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
+from mini_harness.state import AgentState, context_size, anchors
 
 from mini_harness.config import CONFIG
 from mini_harness.retry_request import retry_call
@@ -26,12 +27,14 @@ class Result:
     completion_total: int
     wall: float
     err: str = ''
+    telemetry: dict = field(default_factory=dict)
 
 
 class MiniHarnessAgent:
     def __init__(self, tools: list, cfg = CONFIG, event_sink=None, cancelled=None) -> None:
         self.event_sink = event_sink
         self.cancelled = cancelled
+        self.state = AgentState()
         self.tools = _to_api_tool(tools)
         self.regis = {t.name: t for t in tools}
         self.last_prompt_tokens = 0
@@ -51,6 +54,7 @@ class MiniHarnessAgent:
     def _emit(self, kind, **data):
         if self.cancelled and self.cancelled():
             raise KeyboardInterrupt
+        self.state.record(kind, data)
         if self.event_sink:
             self.event_sink(kind, data)
 
@@ -157,8 +161,15 @@ class MiniHarnessAgent:
                     break
                 turns += 1
                 self.printed = ''
-                if self.last_prompt_tokens >= cfg.compact_limit:
-                    self.message = COMPACT.compact_content(client, self.message, self.session_memory, cfg = cfg)
+                adaptive = os.getenv('MINI_HARNESS_CONTEXT_POLICY', 'adaptive') != 'baseline'
+                estimated = context_size(self.message) if adaptive else 0
+                if max(self.last_prompt_tokens, estimated) >= cfg.compact_limit:
+                    before = len(self.message)
+                    self._emit('compact_start', messages=before, estimated_tokens=estimated)
+                    retained=anchors([{'role':'user','content':value} for value in self.state.memory.get('anchors',[])]+self.message)
+                    self.state.memory['anchors']=retained
+                    self.message = COMPACT.compact_content(client, self.message, self.session_memory, cfg = cfg, retained=retained)
+                    self._emit('compact_end', before=before, after=len(self.message))
                     self._save_memory(quiet=True)
                     self.last_prompt_tokens = 0
                 response, truncated = retry_call(lambda: self._request_agent(client, cfg = cfg), cfg = cfg)
@@ -242,7 +253,8 @@ class MiniHarnessAgent:
             failed_by_tag=by_tag,
             calls_by_tool=by_tool,
             wall = time.time() -start,
-            err = err
+            err = err,
+            telemetry = self.state.public()
         )
 
     def run_task(self, task: str, cfg = CONFIG) -> Result:

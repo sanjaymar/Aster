@@ -188,6 +188,45 @@ def test_windows_exact_offsets_overlap_and_determinism(env):
             assert chunk.text == span.text[chunk.char_start : chunk.char_end]
 
 
+def test_explicit_no_retrieval_limits_generation_to_supplied_excerpt(env, monkeypatch):
+    from mini_harness.agent import MiniHarnessAgent
+
+    stub_generation(monkeypatch)
+    snapshot = env.retriever.corpus.snapshot(env.project, scope="project")
+    item = env.retriever.corpus.items(env.project, snapshot)[0]
+    run_id, _ = start_run(env, prompt="Explain this excerpt " + item.citation, snapshot=snapshot)
+    with env.db.session() as session:
+        run = session.get(AgentRun, run_id)
+        run.context = {**run.context, "retrieval_policy": "off", "response_style": "auto"}
+    monkeypatch.setattr(
+        env.retriever, "search", lambda *_a, **_k: pytest.fail("Retrieval was disabled")
+    )
+    request = MiniHarnessAgent._request_agent
+
+    def no_search_tool(agent, client, cfg):
+        assert set(agent.regis) == {"read_chunk"}
+        return request(agent, client, cfg)
+
+    monkeypatch.setattr(MiniHarnessAgent, "_request_agent", no_search_tool)
+    pipeline = ResearchPipeline(env.service, env.retriever)
+    generate = pipeline.generator.run
+
+    def restricted(request, *args):
+        assert not request.allow_search and set(request.allowed) == {item.id}
+        return generate(request, *args)
+
+    monkeypatch.setattr(pipeline.generator, "run", restricted)
+    result = pipeline.run(
+        run_id,
+        object(),
+        Config(provider="local", model_main="fixture", model_sub="fixture"),
+        lambda *_: None,
+        gateway=Gateway(env),
+    )
+    assert result["answerability"] == "answer"
+    assert result["state"]["route"] == "context"
+
+
 def test_bm25_small_corpus_chinese_and_rrf():
     scores = bm25("实验方案", ["实验方案需要固定随机种子。", "和科研完全无关。"])
     assert scores[0] > scores[1] and np.isfinite(scores).all()
@@ -269,7 +308,7 @@ def test_recovery_closes_interrupted_stages_and_rejects_unsupported_scope(env):
             assert s.get(AgentRun, run_id).status == "interrupted"
             stage = s.scalar(select(PipelineStage).where(PipelineStage.run_id == run_id))
             assert stage.status == "interrupted" and stage.finished_at
-        with pytest.raises(Problem, match="基础助手仅支持"):
+        with pytest.raises(ValueError):
             manager.create(
                 env.project, RunInput(prompt="test", engine="harness", retrieval_scope="project")
             )
@@ -353,7 +392,7 @@ def test_chunk_citations_roundtrip_export_restore(env):
 
 def test_seven_stages_use_harness_then_verify_before_save(env, monkeypatch):
     stub_generation(monkeypatch)
-    run_id, conversation = start_run(env, mode="writing")
+    run_id, conversation = start_run(env, mode="reading")
     events = []
     pipeline = ResearchPipeline(env.service, env.retriever)
     result = pipeline.run(
@@ -382,6 +421,72 @@ def test_seven_stages_use_harness_then_verify_before_save(env, monkeypatch):
         assert s.scalar(select(MemorySnapshot).where(MemorySnapshot.run_id == run_id)).state[
             "focus"
         ] == ["Method Alpha"]
+
+
+def test_reading_checks_selected_sections_before_reflection():
+    """A narrow top hit must not hide the methods already present in the selected PDF."""
+    from contextlib import contextmanager
+    from aster.agent.search import gather
+    from aster.agent.state import AgentState
+    from aster.retrieval.corpus import Evidence
+    from aster.retrieval.engine import Hit
+
+    abstract = Evidence(
+        "abstract", "C", "Paper", "Research question", "paper", "version", 1, section="Abstract"
+    )
+    methods = Evidence(
+        "methods",
+        "C",
+        "Paper",
+        "Measured experimental design",
+        "paper",
+        "version",
+        1,
+        section="Methods",
+    )
+    foreign = Evidence(
+        "foreign",
+        "C",
+        "Other paper",
+        "Unrelated methods",
+        "other",
+        "elsewhere",
+        1,
+        section="Methods",
+    )
+    state = AgentState("run", "project", "conversation", "Prepare reading notes", {})
+    state.allowed = {e.id: e for e in (abstract, methods, foreign)}
+    state.plan = QueryPlan(
+        intent="lookup",
+        standalone_query="Research question",
+        queries=["Research question"],
+        targets=["paper"],
+    )
+
+    class Trace:
+        @contextmanager
+        def stage(self, *args):
+            yield {}
+
+    class Check:
+        def structured(self, schema, instruction, payload, maximum):
+            ids = {hit["id"] for hit in payload["evidence"]}
+            assert "foreign" not in ids
+            return EvidenceDecision(
+                action="answer" if "methods" in ids else "refuse", reason="Measured design required"
+            ), {}
+
+    retriever = SimpleNamespace(search=lambda *args, **kwargs: ([Hit(abstract, {})], {}))
+    gather(
+        state,
+        retriever,
+        Trace(),
+        Check(),
+        {"rerank": False, "reflect": True, "reading_sources": ["paper"]},
+        False,
+        lambda _: None,
+    )
+    assert state.decision.action == "answer"
 
 
 def test_generation_forces_answer_after_two_tool_rounds(env, monkeypatch):
@@ -460,7 +565,7 @@ def test_ambiguous_reference_clarifies_before_retrieval(env):
 
 def test_false_citation_rejected_even_if_judge_says_supported(env, monkeypatch):
     stub_generation(monkeypatch)
-    run_id, _ = start_run(env, mode="writing")
+    run_id, _ = start_run(env, mode="reading")
     result = ResearchPipeline(env.service, env.retriever).run(
         run_id,
         object(),

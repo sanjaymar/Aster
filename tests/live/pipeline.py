@@ -24,14 +24,18 @@ from aster.app.settings import Settings
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--backend", choices=["auto", "lexical"], default="auto")
-    parser.add_argument("--output", default=".local/evaluation/live-pipeline-report.json")
+    parser.add_argument(
+        "--output", default=str(Settings.from_env().data_dir / "experiments/reading/pipeline.json")
+    )
     parser.add_argument("--resume", help="复验失败项，保留已通过项与原始失败尝试")
     args = parser.parse_args()
-    root = Path(".local/evaluation/live-pipeline").resolve()
+    root = (Settings.from_env().data_dir / "cache/checks/pipeline").resolve()
     db = Database(f"sqlite:///{root / 'live.db'}", root)
     db.migrate()
     service = Service(db)
-    corpus = ingest_public_corpus(service, ".local/evaluation/papers")
+    corpus = ingest_public_corpus(
+        service, str(Settings.from_env().data_dir / "archive/retrieval/papers")
+    )
     manager = RunManager(service, replace(Settings.from_env(), retrieval_mode=args.backend))
     manager.save_model_settings({**manager.model_settings(), "max_tokens": 1400, "timeout": 600})
     sources = [corpus["sources"][key] for key in ["dpr", "colbert"]]

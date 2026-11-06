@@ -566,3 +566,5 @@
         padding: 10px;
     }
 }
+
+.reader-note-generation{margin:14px 0 22px;padding:12px;border:1px solid #e5e5e8;border-radius:7px;background:#fafafa}.reader-note-generation .assistant-options{flex-wrap:wrap;margin-bottom:10px}.reader-note-generation select{max-width:100%}.reader-note-generation>.button{width:100%;justify-content:center}

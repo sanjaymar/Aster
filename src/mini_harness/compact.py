@@ -1,5 +1,7 @@
 import time
 import json
+import os
+from mini_harness.state import anchors
 
 from pathlib import Path
 from openai import OpenAI
@@ -61,14 +63,18 @@ Please summarize those conversation history into a working summary report, follo
         )
         return response.choices[0].message.content
 
-    def _compact_text(self, cut: int, response: str, message: list, cfg = CONFIG) -> list:
+    def _compact_text(self, cut: int, response: str, message: list, cfg = CONFIG, retained=None) -> list:
+        if os.getenv('MINI_HARNESS_CONTEXT_POLICY', 'adaptive') != 'baseline':
+            retained = retained if retained is not None else anchors(message[1:cut])
+            if retained:
+                response += '\nVerbatim user excerpts (bounded context data):\n' + json.dumps(retained, ensure_ascii=False)
         return [
             message[0],
             {'role': 'assistant', 'content': f'Here is the summary of the history conversation: {response}', 'reasoning_content': ''},
             *message[cut:]
         ]
 
-    def compact_content(self, client: OpenAI, message: list, session_path: str|Path|None = None,  cfg = CONFIG) -> list:
+    def compact_content(self, client: OpenAI, message: list, session_path: str|Path|None = None,  cfg = CONFIG, retained=None) -> list:
         cut = self._get_cut(message, cfg = cfg)
         if cut <= 1:
             return message
@@ -85,7 +91,7 @@ Please summarize those conversation history into a working summary report, follo
                         f.write(json.dumps({'ts': time.time(), 'removed': old}, ensure_ascii=False) + '\n')
                 except Exception as e:
                     print(f'[compact content]: history dump failed: {type(e).__name__}: {e}')
-            message_new = self._compact_text(cut, response, message, cfg = cfg)
+            message_new = self._compact_text(cut, response, message, cfg = cfg, retained=retained)
         except Exception as e:
             print(f'[compact content]: compact failed: {type(e).__name__}: {e}, skip this round')
             return message

@@ -7,8 +7,6 @@ from starlette.background import BackgroundTask
 
 from aster.domain.schemas import (
     RecordInput,
-    ExperimentInput,
-    ResultInput,
 )
 from aster.domain.service import Problem
 
@@ -40,22 +38,6 @@ def configure(app):
         with db.session() as s:
             service.project(s, project_id)
             return service.evidence(s, project_id, kind, key)
-
-    @app.get("/api/projects/{project_id}/experiments")
-    def experiments(project_id: str):
-        return service.experiments(project_id)
-
-    @app.post("/api/projects/{project_id}/experiments", status_code=201)
-    def create_experiment(project_id: str, body: ExperimentInput):
-        return service.save_experiment(project_id, **body.model_dump())
-
-    @app.put("/api/projects/{project_id}/experiments/{experiment_id}")
-    def update_experiment(project_id: str, experiment_id: str, body: ExperimentInput):
-        return service.save_experiment(project_id, experiment_id=experiment_id, **body.model_dump())
-
-    @app.post("/api/projects/{project_id}/experiments/{experiment_id}/results", status_code=201)
-    def record_result(project_id: str, experiment_id: str, body: ResultInput):
-        return service.record_result(project_id, experiment_id, **body.model_dump())
 
     @app.get("/api/projects/{project_id}/search")
     def search(project_id: str, q: str = Query(min_length=1, max_length=200)):

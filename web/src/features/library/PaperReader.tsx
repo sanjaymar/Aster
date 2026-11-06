@@ -34,6 +34,7 @@ import {
     type RecordItem,
     type Source,
     type SourceData,
+    type Run,
 } from "../../shared/api";
 import { Spinner, Modal } from "../../shared/ui";
 import { SourceDetails } from "./SourceDetails";
@@ -106,6 +107,7 @@ export function PaperReader({
         [rightOpen, setRightOpen] = useState(innerWidth >= 900),
         [fontSize, setFontSize] = useState(18),
         [zoom, setZoom] = useState(1);
+    const [noteRun, setNoteRun] = useState<Run | null>(null);
     const [selection, setSelection] = useState<Selection | null>(null),
         [comment, setComment] = useState(""),
         [seed, setSeed] = useState<{ text: string; key: number }>(),
@@ -360,7 +362,7 @@ export function PaperReader({
     function ask() {
         if (!span) return;
         setQuestion({
-            text: `请解释以下原文，并说明它与代谢组学研究的关系：\n\n${selection?.quote || span.text.slice(0, 1200)}\n\n[[S:${span.id}]]`,
+            text: `请解释以下原文，说明关键概念、适用条件和需要注意的问题：\n\n${selection?.quote || span.text.slice(0, 1200)}\n\n[[S:${span.id}]]`,
             key: Date.now(),
         });
         setRightTab("chat");
@@ -871,6 +873,26 @@ export function PaperReader({
                             projectId={projectId}
                             source={source}
                             notes={notes}
+                            onGenerate={async (skillId, modelId) => {
+                                const run = await api<Run>(
+                                    `/projects/${projectId}/runs`,
+                                    send("POST", {
+                                        prompt: "为当前论文生成阅读笔记，按选定工作方法组织，并保留原文引用。",
+                                        mode: "reading",
+                                        source_ids: [source.id],
+                                        source_version_ids: data
+                                            ? [data.version.id]
+                                            : [],
+                                        retrieval_scope: "selected",
+                                        response_style: "grounded",
+                                        skill_id: skillId || "paper-reading",
+                                        model_profile_id: modelId || null,
+                                    }),
+                                );
+                                setNoteRun(run);
+                                setRightTab("chat");
+                                setRightOpen(true);
+                            }}
                             seed={seed}
                             onOpen={(note) => {
                                 void persistPosition();
@@ -975,6 +997,7 @@ export function PaperReader({
                             pinnedDocument
                             initialScope="selected"
                             draftQuestion={question}
+                            initialRun={noteRun}
                             sourceVersionIds={data ? [data.version.id] : []}
                             projectId={projectId}
                             bundle={{
@@ -988,7 +1011,10 @@ export function PaperReader({
                             setArtifactIds={() => {}}
                             defaultMode="chat"
                             onError={onError}
-                            onRefresh={onRefresh}
+                            onRefresh={() => {
+                                refreshRelated();
+                                onRefresh();
+                            }}
                             onEvidence={onEvidence}
                             onClose={() => setRightOpen(false)}
                         />

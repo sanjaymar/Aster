@@ -13,7 +13,9 @@ class Database:
     def __init__(self, url, data_dir):
         self.url = url
         self.data_dir = Path(data_dir)
-        self.data_dir.mkdir(parents=True, exist_ok=True)
+        from aster.storage.paths import prepare
+
+        prepare(self.data_dir)
         options = (
             {"connect_args": {"check_same_thread": False, "timeout": 30}}
             if url.startswith("sqlite:")

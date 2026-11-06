@@ -287,24 +287,6 @@
     object-fit: contain;
     border: 1px solid #eee;
 }
-.experiment-tabs {
-    display: inline-flex;
-    margin-bottom: 24px;
-}
-.plan-details {
-    margin: 18px 0;
-    padding: 12px;
-    border: 1px solid #eee;
-    border-radius: 4px;
-}
-.plan-details summary {
-    cursor: pointer;
-    font-size: 12px;
-    color: #777;
-}
-.plan-details .form-columns {
-    margin-top: 15px;
-}
 .delete-button {
     color: #777;
 }
@@ -323,10 +305,6 @@
     display: block;
     color: var(--muted);
     margin-top: 4px;
-}
-.experiment-search {
-    max-width: 420px;
-    margin: 12px 0 24px;
 }
 .dashboard-task .home-composer textarea {
     min-height: 82px;

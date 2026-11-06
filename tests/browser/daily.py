@@ -14,7 +14,9 @@ from playwright.sync_api import expect, sync_playwright
 
 def main():
     root = Path(__file__).resolve().parents[2]
-    output = root / ".local/daily-assistant-2026-11-06/browser"
+    from aster.app.settings import Settings
+
+    output = Settings.from_env().data_dir / "cache/checks/reader"
     output.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="aster-daily-browser-") as directory:
         with socket.socket() as sock:
@@ -23,7 +25,7 @@ def main():
         address = f"http://127.0.0.1:{port}"
         env = {k: v for k, v in os.environ.items() if not k.startswith(("ASTER_", "ZHIXU_"))}
         env.update(
-            ASTER_DATA_DIR=directory,
+            ASTER_HOME=directory,
             ASTER_DATABASE_URL=f"sqlite:///{directory}/test.db",
             ASTER_RETRIEVAL_MODE="lexical",
             ASTER_MODEL="fixture",
@@ -97,7 +99,7 @@ def main():
                         profile = client.get("/models/profiles").json()["profiles"][-1]
                         page.get_by_label("PDF 问答默认模型").select_option(profile["id"])
                         page.get_by_role("tab", name="Skills", exact=True).click()
-                        expect(page.locator(".skill-card")).to_have_count(7)
+                        expect(page.locator(".skill-card")).to_have_count(6)
                         page.get_by_role("button", name="新建", exact=True).click()
                         dialog = page.get_by_role("dialog")
                         dialog.get_by_label("名称", exact=True).fill("Personal review")
@@ -106,7 +108,7 @@ def main():
                             "Read the selected evidence and list open questions."
                         )
                         dialog.get_by_role("button", name="保存 Skill", exact=True).click()
-                        expect(page.locator(".skill-card")).to_have_count(8)
+                        expect(page.locator(".skill-card")).to_have_count(7)
                         page.screenshot(path=str(output / "skills.png"))
                         sidebar.get_by_role("button", name="项目概览", exact=False).click()
                         page.get_by_role("button", name="编辑项目", exact=True).click()
@@ -178,12 +180,12 @@ def main():
                         sidebar.get_by_role("button", name="文献阅读", exact=False).click()
                         page.get_by_role("button", name="阅读", exact=True).click()
                         page.get_by_role("button", name="问答", exact=True).click()
-                        expect(page.get_by_label("PDF 问答模型", exact=True)).to_contain_text(
-                            "Reading fixture API"
-                        )
                         expect(
-                            page.get_by_role("dialog", name="论文阅读器").get_by_label(
-                                "助手 Skill", exact=True
+                            page.locator('select[aria-label="PDF 问答模型"]:visible')
+                        ).to_contain_text("Reading fixture API")
+                        expect(
+                            page.get_by_role("dialog", name="论文阅读器").locator(
+                                'select[aria-label="助手 Skill"]:visible'
                             )
                         ).to_contain_text("Personal review")
                         assert not errors, errors

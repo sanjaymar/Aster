@@ -20,16 +20,18 @@ class Settings:
 
     @classmethod
     def from_env(cls):
+        from dotenv import load_dotenv
+        from aster.storage.paths import home
+
+        load_dotenv()
+
         def env(name, default):
             return os.getenv("ASTER_" + name, os.getenv("ZHIXU_" + name, default))
 
-        # Preserve existing installations; use the English name for new directories.
-        default_data = ".local/zhixu" if Path(".local/zhixu").exists() else ".local/aster"
-        data = Path(env("DATA_DIR", default_data)).resolve()
-        database_file = "zhixu.db" if (data / "zhixu.db").exists() else "aster.db"
+        data = home()
         return cls(
             data,
-            env("DATABASE_URL", f"sqlite:///{data / database_file}"),
+            env("DATABASE_URL", f"sqlite:///{data / 'library' / 'aster.db'}"),
             env("MODEL_URL", "http://127.0.0.1:8000/v1").rstrip("/"),
             env("MODEL", "auto"),
             env("MODEL_KEY", "local"),

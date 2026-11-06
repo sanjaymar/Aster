@@ -24,7 +24,7 @@ class ProjectInput(Input):
 
 class RecordInput(Input):
     title: str = Field(min_length=1, max_length=300)
-    kind: str = Field(default="note", max_length=80)
+    kind: Literal["note"] = "note"
     content: str = Field(default="", max_length=200000)
     fields: dict = Field(default_factory=dict)
     expected_revision: int | None = Field(default=None, ge=1)
@@ -51,32 +51,16 @@ class RecordInput(Input):
         return value
 
 
-class ExperimentInput(Input):
-    asset_ids: list[str] = Field(default_factory=list, max_length=50)
-    title: str = Field(min_length=1, max_length=300)
-    content: str = Field(default="", max_length=100000)
-    fields: dict = Field(default_factory=dict)
-    expected_revision: int | None = Field(default=None, ge=1)
-
-
-class ResultInput(Input):
-    plan_version_id: str
-    title: str = Field(min_length=1, max_length=300)
-    content: str = Field(min_length=1, max_length=200000)
-    conditions: str = Field(default="", max_length=20000)
-    fields: dict = Field(default_factory=dict)
-    asset_ids: list[str] = Field(default_factory=list, max_length=50)
-
-
 class RunInput(Input):
     prompt: str = Field(min_length=1, max_length=20000)
-    mode: Literal["chat", "reading", "plan", "writing"] = "chat"
+    mode: Literal["chat", "reading", "slides"] = "chat"
     conversation_id: str | None = None
     source_ids: list[str] = Field(default_factory=list, max_length=10)
     source_version_ids: list[str] = Field(default_factory=list, max_length=10)
     artifact_ids: list[str] = Field(default_factory=list, max_length=20)
-    response_style: Literal["grounded", "discussion"] = "grounded"
-    engine: Literal["pipeline", "harness", "assistant"] = "assistant"
+    response_style: Literal["auto", "grounded", "discussion"] = "auto"
+    engine: Literal["pipeline", "assistant"] = "pipeline"
+    retrieval_policy: Literal["auto", "off"] = "auto"
     retrieval_scope: Literal["selected", "project"] = "selected"
     model_profile_id: str | None = Field(default=None, max_length=80)
     skill_id: str | None = Field(default=None, max_length=80)
@@ -91,10 +75,6 @@ class SourceInput(Input):
 
 class ConversationInput(Input):
     title: str = Field(min_length=1, max_length=200)
-
-
-class ResultEditInput(ResultInput):
-    expected_revision: int = Field(ge=1)
 
 
 class AnnotationCommentInput(Input):

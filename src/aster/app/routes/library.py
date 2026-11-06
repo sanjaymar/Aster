@@ -12,6 +12,22 @@ from aster.domain.service import Problem, required
 
 
 def configure(app):
+    @app.get("/api/projects/{project_id}/sources/{source_id}/figures")
+    def figures(project_id: str, source_id: str, version_id: str | None = None):
+        from aster.library.figures import extract
+        return extract(app.state.service, project_id, source_id, version_id)
+
+    @app.get("/api/projects/{project_id}/sources/{source_id}/preview")
+    def preview(project_id: str, source_id: str, version_id: str | None = None, page: int = 1):
+        from aster.library.figures import thumbnail
+        return FileResponse(thumbnail(app.state.service, project_id, source_id, version_id, page), media_type="image/png")
+
+    @app.get("/api/projects/{project_id}/map")
+    def literature_map(project_id: str):
+        from aster.library.map import build_map
+
+        return build_map(app.state.service, project_id)
+
     service = app.state.service
     db = app.state.db
     reading = app.state.reading

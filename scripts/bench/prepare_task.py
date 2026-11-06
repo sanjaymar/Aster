@@ -12,9 +12,12 @@ def digest(path):
 
 
 def main():
+    from aster.app.settings import Settings
+
+    home = Settings.from_env().data_dir
     p = argparse.ArgumentParser()
-    p.add_argument("--source", default=".local/swebench-http1/astropy__astropy-7606")
-    p.add_argument("--output", default=".local/swebench-runtime/astropy__astropy-7606")
+    p.add_argument("--source", default=str(home / "archive/swe-task/astropy__astropy-7606"))
+    p.add_argument("--output", default=str(home / "experiments/swe/tasks/astropy__astropy-7606"))
     args = p.parse_args()
     source = Path(args.source).resolve()
     target = Path(args.output).resolve()

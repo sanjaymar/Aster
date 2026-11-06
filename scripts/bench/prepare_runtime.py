@@ -12,7 +12,9 @@ import sys
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
-DEST = ROOT / ".local/bench-runtime"
+from aster.app.settings import Settings
+
+DEST = Settings.from_env().data_dir / "experiments/swe/runtime"
 REQUIREMENTS = ["openai==2.45.0", "httpx==0.28.1", "pydantic==2.13.4", "python-dotenv==1.2.2"]
 
 

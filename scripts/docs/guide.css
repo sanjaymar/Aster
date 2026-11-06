@@ -1,0 +1,41 @@
+:root { color-scheme: light; color: #233044; background: #edf1f6; }
+* { box-sizing: border-box; }
+html { font-family: 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif; }
+body { max-width: 1000px; margin: 32px auto; padding: 56px 70px; background: white; font-size: 15px; line-height: 1.8; }
+h1, h2, h3 { color: #183e77; line-height: 1.4; break-after: avoid; }
+h1 { font-size: 30px; }
+h2 { margin-top: 2em; padding-bottom: .3em; border-bottom: 1px solid #ccd8e6; font-size: 23px; }
+h3 { margin-top: 1.7em; font-size: 19px; }
+a { color: #235e9c; text-decoration: none; overflow-wrap: anywhere; }
+p, li { orphans: 3; widows: 3; }
+li + li { margin-top: .3em; }
+table { border-collapse: collapse; width: 100%; table-layout: fixed; font-size: .88em; margin: 1.2em 0; }
+table:has(th:nth-child(3):last-child) th:first-child { width: 22%; }
+table:has(th:nth-child(3):last-child) th:nth-child(2) { width: 41%; }
+thead { display: table-header-group; }
+tr { break-inside: avoid; }
+th, td { border: 1px solid #d6dfe9; padding: 8px 10px; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+th { background: #edf3fa; color: #183e77; }
+code { font-family: 'DejaVu Sans Mono', 'Noto Sans CJK SC', monospace; font-size: .85em; overflow-wrap: anywhere; }
+pre { padding: 15px 18px; background: #f3f6f9; border-left: 3px solid #acbfd7; white-space: pre-wrap; break-inside: avoid; line-height: 1.65; }
+pre code { font-size: .78em; }
+figure { margin: 1.2em 0; break-inside: avoid; }
+p:has(> img) { break-inside: avoid; }
+img { max-width: 100%; height: auto; }
+figcaption { font-size: .8em; color: #62748a; }
+#TOC { background: #f3f6f9; padding: 18px 26px; border-radius: 8px; }
+#TOC ul { padding-left: 22px; }
+#TOC > ul { margin: 0; }
+#TOC a { color: #233044; }
+@media print {
+  :root { background: white; }
+  body { max-width: none; margin: 0; padding: 0; font-size: 10pt; line-height: 1.65; }
+  h1 { font-size: 23pt; }
+  h2 { font-size: 16pt; margin-top: 1.3em; }
+  h3 { font-size: 12pt; margin-top: 1.2em; }
+  th, td { padding: 5px 7px; }
+  pre { padding: 10px 12px; }
+  #TOC { display: none; }
+  table { break-inside: avoid; }
+  a { color: #235e9c; }
+}

@@ -64,16 +64,14 @@ export default function Assistant({
     const promptId = useId();
     const [input, setInput] = useState(""),
         [mode, setMode] = useState(defaultMode),
-        [responseStyle, setResponseStyle] = useState(
-            pinnedDocument ? "grounded" : "discussion",
-        ),
+        [responseStyle, setResponseStyle] = useState("auto"),
         [conversation, setConversation] = useState<string | null>(null),
         [messages, setMessages] = useState<ChatMessage[]>([]),
         [run, setRun] = useState<Run | null>(null),
         [partial, setPartial] = useState(""),
         [busy, setBusy] = useState(false),
         [activity, setActivity] = useState(""),
-        [engine] = useState("assistant"),
+        [engine] = useState("pipeline"),
         [scope, setScope] = useState(initialScope),
         [showHistory, setShowHistory] = useState(false);
     const live = !!run && ["queued", "running"].includes(run.status);
@@ -255,7 +253,9 @@ export default function Assistant({
                         scope === "selected" ? sourceVersionIds : [],
                     artifact_ids: artifactIds,
                     engine,
-                    response_style: responseStyle,
+                    response_style:
+                        responseStyle === "off" ? "auto" : responseStyle,
+                    retrieval_policy: responseStyle === "off" ? "off" : "auto",
                     retrieval_scope: scope,
                     model_profile_id: options.modelId || null,
                     skill_id: options.skillId || null,
@@ -524,7 +524,8 @@ export default function Assistant({
                         onChange={(e) => setResponseStyle(e.target.value)}
                     >
                         <option value="grounded">依据资料</option>
-                        <option value="discussion">自由讨论</option>
+                        <option value="auto">按需检索</option>
+                        <option value="off">不检索</option>
                     </select>
                     <select
                         aria-label="助手任务类型"
@@ -533,8 +534,7 @@ export default function Assistant({
                     >
                         <option value="chat">仅对话</option>
                         <option value="reading">保存为笔记</option>
-                        <option value="plan">推敲方案</option>
-                        <option value="writing">保存为草稿</option>
+                        <option value="slides">生成汇报</option>
                     </select>
                     {live ? (
                         <button

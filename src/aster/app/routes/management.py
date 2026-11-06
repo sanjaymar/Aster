@@ -3,7 +3,6 @@
 from aster.domain.management import DataManagement
 from aster.domain.schemas import (
     SourceInput,
-    ResultEditInput,
     AnnotationCommentInput,
     ConversationInput,
 )
@@ -31,16 +30,6 @@ def configure(app):
     @app.delete("/api/projects/{project_id}/artifacts/{artifact_id}")
     def delete_record(project_id: str, artifact_id: str):
         return remove(project_id, "artifact", artifact_id)
-
-    @app.delete("/api/projects/{project_id}/experiments/{experiment_id}")
-    def delete_experiment(project_id: str, experiment_id: str):
-        return remove(project_id, "experiment", experiment_id)
-
-    @app.put("/api/projects/{project_id}/experiments/{experiment_id}/results/{result_id}")
-    def edit_result(project_id: str, experiment_id: str, result_id: str, body: ResultEditInput):
-        return app.state.service.edit_result(
-            project_id, experiment_id, result_id, **body.model_dump()
-        )
 
     @app.patch("/api/projects/{project_id}/sources/{source_id}/annotations/{annotation_id}")
     def edit_annotation(

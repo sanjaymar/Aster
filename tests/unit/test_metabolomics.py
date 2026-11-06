@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from mini_harness.agent import MiniHarnessAgent, DeepSeekAgent
-from aster.data.sources import article_text, ingest_collection, save_json, sha
+from aster.data.sources import article_text, save_json, sha
 from aster.storage.database import Database
 from aster.evaluation.suite import classification_metrics, pipeline_metrics
 from aster.domain.models import AgentRun, PipelineStage, RunEvent, Conversation, SourceVersion
@@ -78,48 +78,12 @@ def test_failure_rows_stay_in_quality_denominators():
 
 
 def test_new_env_names_keep_legacy_compatibility(tmp_path, monkeypatch):
+    monkeypatch.setenv("ASTER_HOME", str(tmp_path / "new"))
     monkeypatch.setenv("ZHIXU_DATA_DIR", str(tmp_path / "old"))
     monkeypatch.setenv("ASTER_DATA_DIR", str(tmp_path / "new"))
     monkeypatch.setenv("ASTER_MODEL", "test-qwen")
     settings = Settings.from_env()
     assert settings.data_dir == tmp_path / "new" and settings.model_name == "test-qwen"
-
-
-def test_collection_import_is_idempotent_and_rejects_modified_text(tmp_path):
-    db = Database(f"sqlite:///{tmp_path}/db.sqlite", tmp_path)
-    db.migrate()
-    service = Service(db)
-    directory = tmp_path / "collection"
-    for name in ["papers", "studies"]:
-        (directory / name).mkdir(parents=True)
-    text = b"# Source\n\nMetabolomics paper full text."
-    (directory / "papers/PMC1.md").write_bytes(text)
-    paper = {
-        "accession": "PMC1",
-        "title": "Test paper",
-        "url": "https://example.org/PMC1",
-        "text_file": "PMC1.md",
-        "text_sha256": sha(text),
-        "content_level": "full_text",
-    }
-    save_json(directory / "papers/manifest.json", {"papers": [paper]})
-    save_json(directory / "studies/manifest.json", {"studies": []})
-    first = ingest_collection(service, directory)
-    second = ingest_collection(service, directory)
-    assert first["papers"]["sources"] == second["papers"]["sources"]
-    with db.session() as session:
-        assert session.scalar(select(func.count()).select_from(SourceVersion)) == 1
-    restored = service.restore(service.export(first["papers"]["project_id"]))
-    restored_source = service.sources(restored["id"])[0]
-    assert restored_source["accession"] == "PMC1"
-    assert restored_source["content_level"] == "full_text"
-    assert restored_source["url"] == paper["url"]
-    # A new manifest accession still has to pass its content hash before ingestion.
-    paper["accession"] = "PMC2"
-    save_json(directory / "papers/manifest.json", {"papers": [paper]})
-    (directory / "papers/PMC1.md").write_bytes(b"modified")
-    with pytest.raises(ValueError, match="hash mismatch"):
-        ingest_collection(service, directory)
 
 
 def test_turn_trace_links_tool_calls_to_stage_and_duration(tmp_path):
@@ -288,13 +252,3 @@ def test_benchmark_history_keeps_zero_scores_and_separates_environment_errors(tm
     rows = read_benchmarks(tmp_path)
     assert rows[0]["resolved"] == rows[0]["graded"] == 1
     assert rows[1]["score"] == 0 and rows[1]["exceptions"] == 1 and rows[1]["graded"] == 1
-
-
-def test_existing_database_filename_survives_package_rename(tmp_path, monkeypatch):
-    directory = tmp_path / "existing"
-    directory.mkdir()
-    (directory / "zhixu.db").touch()
-    monkeypatch.setenv("ASTER_DATA_DIR", str(directory))
-    monkeypatch.delenv("ASTER_DATABASE_URL", raising=False)
-    monkeypatch.delenv("ZHIXU_DATABASE_URL", raising=False)
-    assert Settings.from_env().database_url.endswith("/zhixu.db")

@@ -12,6 +12,7 @@ import {
 
 export const kindLabels: Record<string, string> = {
     note: "笔记",
+    deck: "汇报",
     labnote: "实验日志",
     draft: "写作草稿",
     report: "研究报告",

@@ -22,18 +22,20 @@ dependencies = [
     "psycopg[binary]>=3.2,<4",
     "numpy>=1.26,<3",
     "fonttools>=4,<5",
+    "python-pptx>=1,<2",
+    "pillow>=11,<13",
+    "pypdfium2>=4,<6",
 ]
 
 [project.optional-dependencies]
 retrieval = ["faiss-cpu>=1.9,<2", "sentence-transformers>=3,<6", "transformers>=4.44,<5", "torch==2.8.0"]
 
 [project.urls]
-Repository = "https://github.com/mini-harness/mini-harness"
+Repository = "https://github.com/sanjaymar/Aster"
 
 [project.scripts]
 mini-harness = "mini_harness.main:main"
 aster = "aster.app.cli:main"
-zhixu = "aster.app.cli:main"
 
 [dependency-groups]
 dev = ["ruff>=0.6", "pytest>=8,<10"]

@@ -15,7 +15,12 @@ import threading
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", default=".local/metabolomics/retrieval-worker.json")
+    parser.add_argument(
+        "--config",
+        default=str(
+            Path(os.getenv("ASTER_HOME") or "data") / "config/retrieval.json"
+        ),
+    )
     parser.add_argument("--device", default="cuda:1")
     parser.add_argument("--port", type=int, default=8767)
     args = parser.parse_args()

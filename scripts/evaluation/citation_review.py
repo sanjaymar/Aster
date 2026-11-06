@@ -75,7 +75,9 @@ def main():
     report = json.loads(Path(args.report).read_text())
     project_id = (
         report.get("corpus_project_id")
-        or json.loads(Path(".local/metabolomics/imported.json").read_text())["papers"]["project_id"]
+        or json.loads((settings.data_dir / "experiments/qa/corpus/imported.json").read_text())[
+            "papers"
+        ]["project_id"]
     )
     snapshot = corpus.snapshot(project_id, scope="project")
     by_id = {item.id: item for item in corpus.items(project_id, snapshot)}

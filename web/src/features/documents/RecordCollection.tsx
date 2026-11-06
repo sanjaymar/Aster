@@ -3,6 +3,21 @@ import { noteTypes } from "./templates";
 import { type RecordItem } from "../../shared/api";
 import { Empty, date, kindLabels } from "../../shared/components";
 
+function excerpt(record: RecordItem) {
+    const body = record.version.content;
+    const summary =
+        body.match(/## 核心要点\s+([\s\S]*?)(?=\n## |$)/)?.[1] || body;
+    return (
+        summary
+            .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+            .replace(/\[\[[^\]]+\]\]/g, "")
+            .replace(/[#*>`|]/g, "")
+            .replace(/\s+/g, " ")
+            .trim()
+            .slice(0, 190) || "还没有正文"
+    );
+}
+
 export function RecordCollection({
     items,
     selected,
@@ -23,7 +38,10 @@ export function RecordCollection({
     return items.length ? (
         <div className={view === "list" ? "note-list" : "note-grid"}>
             {items.map((a) => (
-                <article className="note-card" key={a.id}>
+                <article
+                    className={`note-card ${a.version.fields.layout === "report" ? "report-card" : ""}`}
+                    key={a.id}
+                >
                     <div className="inline spread">
                         <span
                             className={
@@ -49,12 +67,7 @@ export function RecordCollection({
                             {!!a.version.fields.pinned && <Pin size={13} />}{" "}
                             {a.title}
                         </h3>
-                        <p>
-                            {a.version.content
-                                .replace(/\[\[[^\]]+\]\]/g, "〔引用〕")
-                                .replace(/[#*>`]/g, "")
-                                .slice(0, 160) || "还没有正文"}
-                        </p>
+                        <p>{excerpt(a)}</p>
                     </button>
                     {Array.isArray(a.version.fields.tags) && (
                         <div className="note-tags">

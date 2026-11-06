@@ -48,7 +48,7 @@ def test_source_edit_delete_restore_and_shared_project_scope(client):
     assert client.get(f"/api/projects/{first}/sources").json()[0]["title"] == payload["title"]
 
 
-@pytest.mark.parametrize("kind", ["note", "labnote", "draft"])
+@pytest.mark.parametrize("kind", ["note"])
 def test_personal_document_crud_preserves_cited_versions(client, kind):
     pid = fixtures.project(client)
     row = fixtures.note(client, pid, "Original idea.", kind=kind)
@@ -66,52 +66,6 @@ def test_personal_document_crud_preserves_cited_versions(client, kind):
     trash = client.get(f"/api/trash?project_id={pid}").json()[0]
     assert client.post(f"/api/trash/{trash['id']}/restore").status_code == 200
     assert client.get(f"/api/projects/{pid}/artifacts").json()[0]["revision"] == 2
-
-
-def test_plan_result_edit_and_group_restore_respect_previously_deleted_results(client):
-    pid = fixtures.project(client)
-    exp = client.post(
-        f"/api/projects/{pid}/experiments", json={"title": "Plan", "content": "Version one"}
-    ).json()
-    base = f"/api/projects/{pid}/experiments/{exp['id']}"
-
-    def result(title):
-        return client.post(
-            base + "/results",
-            json={
-                "title": title,
-                "content": "Observed record",
-                "plan_version_id": exp["plan"]["version"]["id"],
-            },
-        ).json()
-
-    first, second = result("first"), result("second")
-    new_plan = client.put(
-        base, json={"title": "Plan v2", "content": "Version two", "expected_revision": 1}
-    ).json()
-    body = {
-        "title": "Corrected result",
-        "content": "Corrected values",
-        "conditions": "Corrected conditions",
-        "plan_version_id": new_plan["plan"]["version"]["id"],
-        "expected_revision": 1,
-    }
-    response = client.put(base + f"/results/{second['id']}", json=body)
-    assert response.status_code == 200 and response.json()["result"]["revision"] == 2
-    assert client.put(base + f"/results/{second['id']}", json=body).status_code == 409
-    assert (
-        client.delete(f"/api/projects/{pid}/artifacts/{first['result']['id']}").status_code == 200
-    )
-    assert client.delete(base).status_code == 200
-    assert client.get(f"/api/projects/{pid}/experiments").json() == []
-    assert client.get(f"/api/projects/{pid}/artifacts").json() == []
-    entries = client.get(f"/api/trash?project_id={pid}").json()
-    plan_trash = next(item for item in entries if item["kind"] == "experiment")
-    assert client.post(f"/api/trash/{plan_trash['id']}/restore").status_code == 200
-    restored = client.get(f"/api/projects/{pid}/experiments").json()[0]
-    assert len(restored["runs"]) == 1 and restored["runs"][0]["plan_version"] == 2
-    assert restored["runs"][0]["conditions"] == "Corrected conditions"
-    assert len(client.get(f"/api/trash?project_id={pid}").json()) == 1
 
 
 def test_project_recycle_and_active_task_protection(client, monkeypatch):

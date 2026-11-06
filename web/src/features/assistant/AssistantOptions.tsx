@@ -82,10 +82,10 @@ export function AssistantOptions({
                 disabled={disabled}
                 onChange={(e) => options.setSkillId(e.target.value)}
             >
-                <option value="">Skills · 自动</option>
+                <option value="">工作方法 · 默认</option>
                 {options.skills.map((s) => (
                     <option value={s.id} key={s.id}>
-                        {s.name}
+                        {s.name} · {s.output || s.description}
                     </option>
                 ))}
             </select>

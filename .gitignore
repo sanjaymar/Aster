@@ -25,6 +25,7 @@ mini_harness_*.json
 mini_harness_*.jsonl
 sandbox/
 .local/
+/data/
 jobs/
 *.tar.gz
 .DS_Store

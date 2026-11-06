@@ -1,6 +1,7 @@
 .git
 .venv
 .local
+data
 .cache
 .env
 .env.*

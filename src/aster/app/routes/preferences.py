@@ -1,7 +1,7 @@
 """Model and instruction-skill management. Secrets never appear in responses."""
 
 from aster.models.profiles import ProfileInput, DefaultsInput
-from aster.agent.skills import SkillInput
+from aster.skills import SkillInput
 
 
 def configure(app):

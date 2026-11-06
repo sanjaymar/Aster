@@ -14,8 +14,7 @@ const empty = {
 const categories: Record<string, string> = {
     reading: "阅读",
     thinking: "思考",
-    experiment: "实验",
-    writing: "写作",
+    slides: "汇报",
     custom: "自定义",
 };
 
@@ -138,7 +137,19 @@ export function SkillSettings({
                         >
                             <h3>{s.name}</h3>
                             <p>{s.description}</p>
+                            {s.output && <small>产出：{s.output}</small>}
+                            {s.requires && <small>输入：{s.requires}</small>}
                         </button>
+                        {s.source_url && (
+                            <a
+                                className="skill-source"
+                                href={s.source_url}
+                                target="_blank"
+                                rel="noreferrer"
+                            >
+                                开源方法 ↗
+                            </a>
+                        )}
                         <div className="inline spread">
                             <button
                                 className="text-button"
