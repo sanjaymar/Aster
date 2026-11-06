@@ -1,0 +1,42 @@
+# Linux: host networking lets the app reach a Qwen service bound to 127.0.0.1.
+# Default app remains accessible only on the host's loopback address.
+services:
+  aster:
+    build:
+      context: .
+      args:
+        INSTALL_RETRIEVAL: ${ASTER_INSTALL_RETRIEVAL:-0}
+    network_mode: host
+    command: ["--host", "${ASTER_HOST:-127.0.0.1}", "--port", "${ASTER_PORT:-8765}"]
+    environment:
+      ASTER_DATA_DIR: /data
+      ASTER_MODEL_URL: ${ASTER_MODEL_URL:-http://127.0.0.1:8000/v1}
+      ASTER_MODEL: ${ASTER_MODEL:-auto}
+      ASTER_MODEL_KEY: ${ASTER_MODEL_KEY:-local}
+      ASTER_ACCESS_TOKEN: ${ASTER_ACCESS_TOKEN:-}
+      ASTER_DATABASE_URL: ${ASTER_DATABASE_URL:-sqlite:////data/zhixu.db}
+      ASTER_RETRIEVAL_MODE: ${ASTER_RETRIEVAL_MODE:-auto}
+      ASTER_RETRIEVAL_DEVICE: cpu
+      ASTER_MODEL_THREADS: ${ASTER_MODEL_THREADS:-4}
+    volumes:
+      - zhixu-data:/data
+    restart: unless-stopped
+  postgres:
+    image: postgres:17-alpine
+    profiles: [postgres]
+    environment:
+      POSTGRES_USER: zhixu
+      POSTGRES_DB: zhixu
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local-development-only}
+    ports: ["127.0.0.1:5433:5432"]
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zhixu"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+volumes:
+  # Retain the existing volume name to preserve previous installations.
+  zhixu-data:
+  postgres-data:

@@ -21,6 +21,20 @@ jobs:
     env:
       DEEPSEEK_API_KEY: ci-dummy-not-a-real-key
       PYTHON_DOTENV_DISABLED: "1"
+      ZHIXU_TEST_POSTGRES_URL: postgresql+psycopg://postgres:ci-only@127.0.0.1:5432/zhixu_check
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: ci-only
+          POSTGRES_DB: zhixu_check
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Set up uv and Python
@@ -33,14 +47,19 @@ jobs:
         run: uv sync --locked
       - name: Check source
         run: |
-          uv run --locked ruff check src tui.py
+          uv run --locked ruff check src tui.py tests
           uv run --locked python -m compileall -q src
       - name: Check imports, tool schemas, and CLI offline
         run: |
-          uv run --locked python -c "from mini_harness.agent import DeepSeekAgent; from mini_harness.tool.box import TOOLS; assert len(DeepSeekAgent(TOOLS).tools) == 9"
+          uv run --locked python -c "from mini_harness.agent import MiniHarnessAgent; from mini_harness.tool.box import TOOLS; assert len(MiniHarnessAgent(TOOLS).tools) == 9"
           uv run --locked mini-harness --help
           MINI_HARNESS_PROFILE=bench uv run --locked mini-harness --help
       - name: Check TUI entry point offline
         run: uv run --script tui.py --help
       - name: Build package
-        run: uv build
+        run: |
+          npm ci --prefix web
+          npm run build --prefix web
+          uv run --locked pytest -q
+          uv run --locked aster --help
+          uv build

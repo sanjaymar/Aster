@@ -29,9 +29,7 @@ def write_json(path: Path, data, overwrite: bool = False) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     if path.exists() and not overwrite:
         raise FileExistsError(path)
-    with tempfile.NamedTemporaryFile(
-        "w", encoding="utf-8", dir=path.parent, delete=False
-    ) as f:
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, delete=False) as f:
         temporary = Path(f.name)
         try:
             json.dump(data, f, ensure_ascii=False, indent=2)
@@ -89,9 +87,7 @@ def export_predictions(job_dir: Path, output: Path) -> list[dict]:
     result = json.loads((job_dir / "result.json").read_text())
     if not result.get("finished_at"):
         raise ValueError("The Harbor job has not finished")
-    trials = sorted(
-        p for p in job_dir.iterdir() if p.is_dir() and (p / "config.json").is_file()
-    )
+    trials = sorted(p for p in job_dir.iterdir() if p.is_dir() and (p / "config.json").is_file())
     lock = json.loads((job_dir / "lock.json").read_text())
     if not trials or len(trials) != len(lock["trials"]):
         raise ValueError("Incomplete trial directories; refusing a partial export")
@@ -145,9 +141,7 @@ def job_config(args) -> dict:
         "retry": {"max_retries": 0},
         "environment": {"type": args.environment, "delete": True},
         "verifier": {"disable": True},
-        "agents": [
-            {"import_path": ADAPTER, "model_name": args.model, "kwargs": kwargs}
-        ],
+        "agents": [{"import_path": ADAPTER, "model_name": args.model, "kwargs": kwargs}],
         "datasets": [dataset],
     }
 
@@ -157,13 +151,9 @@ def execute(command: list[str], dry_run: bool = False) -> None:
     if dry_run:
         return
     if not shutil.which(command[0]):
-        raise RuntimeError(
-            f"{command[0]} is not installed; install bench/requirements-sb-cli.txt"
-        )
+        raise RuntimeError(f"{command[0]} is not installed; install bench/requirements-sb-cli.txt")
     env = dict(os.environ)
-    env["PYTHONPATH"] = os.pathsep.join(
-        filter(None, [str(ROOT), env.get("PYTHONPATH")])
-    )
+    env["PYTHONPATH"] = os.pathsep.join(filter(None, [str(ROOT), env.get("PYTHONPATH")]))
     subprocess.run(command, cwd=ROOT, env=env, check=True)
 
 
@@ -174,9 +164,7 @@ def generate(args) -> None:
         print(json.dumps(config, indent=2))
     else:
         if not shutil.which("harbor"):
-            raise RuntimeError(
-                "harbor is not installed; install bench/requirements-sb-cli.txt"
-            )
+            raise RuntimeError("harbor is not installed; install bench/requirements-sb-cli.txt")
         if args.job_dir.exists():
             raise FileExistsError(f"Choose a new job directory: {args.job_dir}")
         if config_path.exists():
@@ -187,9 +175,7 @@ def generate(args) -> None:
     execute(["harbor", "run", "--config", str(config_path)], args.dry_run)
 
 
-def submit(
-    predictions: Path, run_id: str, report_dir: Path, dry_run: bool = False
-) -> None:
+def submit(predictions: Path, run_id: str, report_dir: Path, dry_run: bool = False) -> None:
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", run_id) or run_id in {
         "PARENT",
         "STEM",
@@ -227,15 +213,10 @@ def submit(
     if not dry_run:
         report_path = report_dir / f"{SUBSET}__{SPLIT}__{run_id}.json"
         report = json.loads(report_path.read_text())
-        if (
-            report.get("submitted_instances") != len(rows)
-            or report.get("pending_instances") != 0
-        ):
+        if report.get("submitted_instances") != len(rows) or report.get("pending_instances") != 0:
             raise RuntimeError(f"Incomplete cloud evaluation; inspect {report_path}")
         if report.get("error_instances", 0):
-            raise RuntimeError(
-                f"Cloud evaluation reported errors; inspect {report_path}"
-            )
+            raise RuntimeError(f"Cloud evaluation reported errors; inspect {report_path}")
 
 
 def main() -> None:
@@ -278,9 +259,7 @@ def main() -> None:
         command.add_argument("--dry-run", action="store_true")
         if name == "run":
             command.add_argument("--run-id", required=True)
-    command = commands.add_parser(
-        "export", help="Collect one prediction per Harbor trial"
-    )
+    command = commands.add_parser("export", help="Collect one prediction per Harbor trial")
     command.add_argument("--job-dir", type=Path, required=True)
     command.add_argument("--output", type=Path)
     command = commands.add_parser(
@@ -295,21 +274,18 @@ def main() -> None:
         if hasattr(args, "job_dir"):
             args.job_dir = args.job_dir.expanduser().resolve()
         if args.command in {"run", "submit"}:
-            if not re.fullmatch(
-                r"[A-Za-z0-9][A-Za-z0-9_.-]*", args.run_id
-            ) or args.run_id in {"PARENT", "STEM"}:
+            if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", args.run_id) or args.run_id in {
+                "PARENT",
+                "STEM",
+            }:
                 raise ValueError(
                     "Use an explicit run ID containing letters, numbers, dots, underscores or hyphens"
                 )
         if args.command == "run" and not args.dry_run:
             if not os.environ.get("SWEBENCH_API_KEY"):
-                raise RuntimeError(
-                    "Set SWEBENCH_API_KEY before starting the cloud pipeline"
-                )
+                raise RuntimeError("Set SWEBENCH_API_KEY before starting the cloud pipeline")
             if not shutil.which("sb-cli"):
-                raise RuntimeError(
-                    "sb-cli is not installed; install bench/requirements-sb-cli.txt"
-                )
+                raise RuntimeError("sb-cli is not installed; install bench/requirements-sb-cli.txt")
         if args.command in {"generate", "run"}:
             generate(args)
         if args.command == "export":

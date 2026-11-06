@@ -1,0 +1,30 @@
+{
+  "name":"open-retrieval-anchors-v1",
+  "annotation":"anchor-based weak labels; engineering regression, not expert-reviewed QA quality",
+  "cases":[
+    {"id":"dpr-1","paper":"dpr","query":"How does DPR represent questions and passages for dense retrieval?","anchors":["dense representations"]},
+    {"id":"dpr-2","paper":"dpr","query":"Which sparse baseline does Dense Passage Retrieval compare with?","anchors":["BM25"]},
+    {"id":"dpr-3","paper":"dpr","query":"What is the role of in-batch negatives in Dense Passage Retrieval?","anchors":["in-batch"]},
+    {"id":"rag-1","paper":"rag","query":"How does RAG combine parametric and non-parametric memory?","anchors":["parametric"]},
+    {"id":"rag-2","paper":"rag","query":"How do RAG-Sequence and RAG-Token differ in document use?","anchors":["RAG-Token"]},
+    {"id":"rag-3","paper":"rag","query":"What retriever initializes retrieval-augmented generation?","anchors":["DPR"]},
+    {"id":"colbert-1","paper":"colbert","query":"How does ColBERT use late interaction between query and document embeddings?","anchors":["late interaction"]},
+    {"id":"colbert-2","paper":"colbert","query":"How is MaxSim used to compute ColBERT retrieval scores?","anchors":["MaxSim"]},
+    {"id":"colbert-3","paper":"colbert","query":"Which ColBERT document representations can be computed offline?","anchors":["offline"]},
+    {"id":"bge-1","paper":"bge","query":"What dense, sparse and multi-vector retrieval functions does BGE-M3 support?","anchors":["sparse retrieval"]},
+    {"id":"bge-2","paper":"bge","query":"How does BGE-M3 address multi-granularity retrieval?","anchors":["multi-granularity"]},
+    {"id":"bge-3","paper":"bge","query":"How long are the supported input sequences of BGE-M3?","anchors":["8192","8,192"]},
+    {"id":"selfrag-1","paper":"selfrag","query":"What are reflection tokens used for in Self-RAG?","anchors":["reflection tokens"]},
+    {"id":"selfrag-2","paper":"selfrag","query":"How does Self-RAG decide when to retrieve passages?","anchors":["retrieve"]},
+    {"id":"selfrag-3","paper":"selfrag","query":"How does Self-RAG assess whether evidence supports a generated answer?","anchors":["support"]},
+    {"id":"ircot-1","paper":"ircot","query":"How does IRCoT interleave retrieval and chain-of-thought reasoning?","anchors":["interleav"]},
+    {"id":"ircot-2","paper":"ircot","query":"Why does IRCoT target multi-hop questions?","anchors":["multi-hop"]},
+    {"id":"ircot-3","paper":"ircot","query":"How does IRCoT use reasoning to guide the next retrieval?","anchors":["retrieval"]},
+    {"id":"middle-1","paper":"middle","query":"How does the position of relevant information affect long-context language models?","anchors":["beginning or end"]},
+    {"id":"middle-2","paper":"middle","query":"What happens when relevant information is in the middle of the context?","anchors":["middle"]},
+    {"id":"middle-3","paper":"middle","query":"Which multi-document question answering tasks evaluate long-context information use?","anchors":["multi-document"]},
+    {"id":"crag-1","paper":"crag","query":"What is the purpose of the retrieval evaluator in Corrective RAG?","anchors":["retrieval evaluator"]},
+    {"id":"crag-2","paper":"crag","query":"What does CRAG do when retrieved documents are incorrect?","anchors":["web search"]},
+    {"id":"crag-3","paper":"crag","query":"What role does knowledge refinement play in Corrective RAG?","anchors":["knowledge refinement"]}
+  ]
+}

@@ -91,7 +91,7 @@ def agent_worker() -> None:
         from mini_harness.config import CONFIG
         from mini_harness.tool import box
 
-        class ConnectedAgent(core.DeepSeekAgent):
+        class ConnectedAgent(core.MiniHarnessAgent):
             def _save_memory(self, quiet=False, cfg=CONFIG):
                 emit("history", messages=self.message, tokens=self.last_prompt_tokens)
 

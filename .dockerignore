@@ -1,0 +1,13 @@
+.git
+.venv
+.local
+.cache
+.env
+.env.*
+session.json
+sandbox
+web/node_modules
+src/aster/static
+jobs
+**/__pycache__
+dist

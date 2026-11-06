@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "mini-harness"
 version = "0.1.0"
-description = "A minimal Python coding-agent harness"
+description = "Aster: local research assistant built on mini-harness"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -13,22 +13,42 @@ dependencies = [
     "httpx==0.28.1",
     "pydantic==2.13.4",
     "python-dotenv==1.2.2",
+    "fastapi>=0.115,<1",
+    "uvicorn>=0.34,<1",
+    "sqlalchemy>=2.0,<3",
+    "alembic>=1.14,<2",
+    "python-multipart>=0.0.20",
+    "pypdf>=5,<7",
+    "psycopg[binary]>=3.2,<4",
+    "numpy>=1.26,<3",
+    "fonttools>=4,<5",
 ]
+
+[project.optional-dependencies]
+retrieval = ["faiss-cpu>=1.9,<2", "sentence-transformers>=3,<6", "transformers>=4.44,<5", "torch==2.8.0"]
 
 [project.urls]
 Repository = "https://github.com/mini-harness/mini-harness"
 
 [project.scripts]
 mini-harness = "mini_harness.main:main"
+aster = "aster.app.cli:main"
+zhixu = "aster.app.cli:main"
 
 [dependency-groups]
-dev = ["ruff>=0.6"]
+dev = ["ruff>=0.6", "pytest>=8,<10"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/mini_harness"]
+packages = ["src/mini_harness", "src/aster"]
+
+[tool.hatch.build]
+artifacts = ["src/aster/static/**"]
 
 [tool.hatch.build.targets.sdist]
-include = ["src/mini_harness", "pyproject.toml", "README.md"]
+include = ["src/mini_harness", "src/aster", "pyproject.toml", "README.md", "docs", "eval", "scripts", "alembic.ini", "web", "tests", "Dockerfile", "compose.yaml", "bench", ".env.example"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 100
@@ -41,3 +61,11 @@ select = ["E9", "F63", "F7", "F82"]
 
 [tool.uv]
 cache-dir = ".cache/uv"
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

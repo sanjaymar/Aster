@@ -2,7 +2,7 @@ import os
 import fnmatch
 
 from pathlib import Path
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from dotenv import find_dotenv, load_dotenv
 
 from mini_harness.bench_profile import BENCH_OVERRIDE
@@ -17,17 +17,18 @@ def default_workspace() -> Path:
 class Config:
     work_space: Path = default_workspace()
     profile: str = 'local'
-    provider: str = 'deepseek'
-    api_key_env: str = 'DEEPSEEK_API_KEY'
+    provider: str = 'local'
+    api_key_env: str = 'LOCAL_API_KEY'
+    api_key_value: str|None = None
     reasoning_effort: str|None = None
 
-    model_main: str = 'deepseek-v4-flash'
-    model_sub: str = 'deepseek-v4-flash'
-    base_url: str = 'https://api.deepseek.com'
+    model_main: str = 'auto'
+    model_sub: str = 'auto'
+    base_url: str = 'http://127.0.0.1:8000/v1'
     max_turns_main: int = 50
     max_turns_sub: int = 20
-    max_tokens_main: int = 100000
-    max_tokens_sub: int = 50000
+    max_tokens_main: int = 4096
+    max_tokens_sub: int = 2048
     temp_set: float = 0.5
     think_main: str = 'enabled'
     think_sub: str = 'enabled'
@@ -41,7 +42,7 @@ class Config:
     guard_read: bool = True
     guard_write: bool = True
     session_path: str|None = None
-    clip_limit: int = 80000
+    clip_limit: int = 12000
     track_files: bool = True
     edit_require_read: bool = True
     write_require_read: bool = True
@@ -54,7 +55,7 @@ class Config:
     rate_base: float = 30.0
     rate_cap: float = 120.0
 
-    compact_limit: int = 300000
+    compact_limit: int = 16000
     recent_keep: int = 20
 
     AGREE: frozenset = frozenset(
@@ -213,7 +214,20 @@ O2. run_subagent (explore_agent, coding_agent, planning_agent): use it when a su
 
     @property
     def api_key(self) -> str|None:
-        return os.environ.get('MINI_HARNESS_API_KEY') or os.environ.get(self.api_key_env)
+        return self.api_key_value or os.environ.get('MINI_HARNESS_API_KEY') or os.environ.get(self.api_key_env) or ('local' if self.provider == 'local' else None)
+
+    def resolve_model(self, client):
+        if self.model_main != 'auto' and self.model_sub != 'auto':
+            return self
+        if self.provider == 'local':
+            models = client.models.list().data
+            if not models:
+                raise RuntimeError('Local model service returned no models')
+            default = models[0].id
+        else:
+            default = 'deepseek-v4-flash' if self.provider == 'deepseek' else 'gpt-4.1'
+        main = default if self.model_main == 'auto' else self.model_main
+        return replace(self, model_main=main, model_sub=main if self.model_sub == 'auto' else self.model_sub)
 
     def request_options(self, sub: bool = False) -> dict:
         options = {'model': self.model_sub if sub else self.model_main}
@@ -222,6 +236,9 @@ O2. run_subagent (explore_agent, coding_agent, planning_agent): use it when a su
             options['max_completion_tokens'] = limit
             if self.reasoning_effort:
                 options['reasoning_effort'] = self.reasoning_effort
+        elif self.provider == 'local':
+            options.update(max_tokens=limit, temperature=self.temp_set,
+                           extra_body={'chat_template_kwargs': {'enable_thinking': False}})
         else:
             options.update(
                 max_tokens=limit,
@@ -231,7 +248,7 @@ O2. run_subagent (explore_agent, coding_agent, planning_agent): use it when a su
         return options
 
     def request_messages(self, messages: list) -> list:
-        if self.provider != 'openai':
+        if self.provider not in {'openai', 'local'}:
             return messages
         return [
             {key: value for key, value in message.items()
@@ -253,19 +270,29 @@ O2. run_subagent (explore_agent, coding_agent, planning_agent): use it when a su
 def build_config() -> Config:
     model = os.environ.get('MINI_HARNESS_MODEL')
     prefix = model.partition('/')[0] if model else None
-    inferred = prefix if prefix in {'openai', 'deepseek'} else (
-        'deepseek' if not model or model.startswith('deepseek-') else 'openai'
+    inferred = prefix if prefix in {'openai', 'deepseek', 'local'} else (
+        'local' if not model or model.lower().startswith('qwen') else 'deepseek' if model.startswith('deepseek-') else 'openai'
     )
     provider = os.environ.get('MINI_HARNESS_PROVIDER', inferred).lower()
-    if provider not in {'openai', 'deepseek'}:
+    if provider not in {'openai', 'deepseek', 'local'}:
         raise ValueError(f'Unsupported provider: {provider}')
-    if prefix in {'openai', 'deepseek'}:
+    if prefix in {'openai', 'deepseek', 'local'}:
         if prefix != provider:
             raise ValueError('Model prefix conflicts with MINI_HARNESS_PROVIDER')
         model = model.partition('/')[2]
     overrides = dict(BENCH_OVERRIDE) if os.environ.get('MINI_HARNESS_PROFILE') == 'bench' else {}
     overrides.update(provider=provider, api_key_env=os.environ.get(
         'MINI_HARNESS_API_KEY_ENV', f'{provider.upper()}_API_KEY'))
+    if provider == 'deepseek':
+        for key, value in {
+            'model_main': 'deepseek-v4-flash', 'model_sub': 'deepseek-v4-flash',
+            'base_url': 'https://api.deepseek.com', 'max_tokens_main': 100000,
+            'max_tokens_sub': 50000, 'compact_limit': 300000, 'clip_limit': 80000,
+        }.items():
+            overrides.setdefault(key, value)
+    if provider == 'local':
+        overrides.update(max_tokens_main=4096, max_tokens_sub=2048,
+                         compact_limit=16000, clip_limit=12000)
     if provider == 'openai':
         overrides.update(
             model_main='gpt-4.1', model_sub='gpt-4.1',
@@ -287,19 +314,24 @@ def build_config() -> Config:
     if overrides.get('reasoning_effort') and provider == 'openai':
         overrides.update(think_main=overrides['reasoning_effort'],
                          think_sub=overrides['reasoning_effort'])
-    for field in ('max_tokens_main', 'max_tokens_sub', 'compact_limit'):
+    for field in ('max_tokens_main', 'max_tokens_sub', 'compact_limit', 'clip_limit'):
         if value := os.environ.get(f'MINI_HARNESS_{field.upper()}'):
             if int(value) <= 0:
                 raise ValueError(f'{field} must be positive')
             overrides[field] = int(value)
     sub_model = overrides.get('model_sub')
-    if sub_model and sub_model.partition('/')[0] in {'openai', 'deepseek'}:
+    if sub_model and sub_model.partition('/')[0] in {'openai', 'deepseek', 'local'}:
         prefix, _, name = sub_model.partition('/')
         if prefix != provider or not name.strip():
             raise ValueError('Sub-model must use the same provider as the main model')
         overrides['model_sub'] = name
+    if provider == 'local':
+        overrides.setdefault('base_url', 'http://127.0.0.1:8000/v1')
+        overrides.setdefault('model_main', 'auto')
+        overrides.setdefault('model_sub', overrides['model_main'])
+        overrides.setdefault('max_tokens_main', 4096)
+        overrides.setdefault('max_tokens_sub', 4096)
+        overrides.setdefault('compact_limit', 16000)
     return Config(**overrides)
 
 CONFIG = build_config()
-if not CONFIG.api_key:
-    raise RuntimeError(f'[api error]: set {CONFIG.api_key_env} or MINI_HARNESS_API_KEY')

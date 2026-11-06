@@ -1,0 +1,1176 @@
+{
+  "name": "multi-turn-templates-v1",
+  "annotation": "30 templated four-turn engineering scenarios; not independent expert-reviewed evaluation; do not report as measured real-world QA accuracy",
+  "dialogues": [
+    {
+      "id": "dialogue-01",
+      "type": "template_regression",
+      "split": "development",
+      "turns": [
+        {
+          "question": "请概述《Dense Passage Retrieval for Open-Domain Question Answering》的核心方法。",
+          "intent": "lookup",
+          "targets": [
+            "dpr"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它为什么采用这种设计？只依据原文回答。",
+          "intent": "explain",
+          "targets": [
+            "dpr"
+          ],
+          "constraint": "只依据原文回答",
+          "clarify": false
+        },
+        {
+          "question": "与《Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks》相比，两者有什么区别？",
+          "intent": "compare",
+          "targets": [
+            "dpr",
+            "rag"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它的效果更好吗？",
+          "intent": null,
+          "targets": [],
+          "clarify": true
+        }
+      ]
+    },
+    {
+      "id": "dialogue-02",
+      "type": "template_regression",
+      "split": "development",
+      "turns": [
+        {
+          "question": "请概述《Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks》的核心方法。",
+          "intent": "lookup",
+          "targets": [
+            "rag"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它为什么采用这种设计？只依据原文回答。",
+          "intent": "explain",
+          "targets": [
+            "rag"
+          ],
+          "constraint": "只依据原文回答",
+          "clarify": false
+        },
+        {
+          "question": "与《ColBERT: Efficient and Effective Passage Search via Contextualized Late Interaction over BERT》相比，两者有什么区别？",
+          "intent": "compare",
+          "targets": [
+            "rag",
+            "colbert"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它的效果更好吗？",
+          "intent": null,
+          "targets": [],
+          "clarify": true
+        }
+      ]
+    },
+    {
+      "id": "dialogue-03",
+      "type": "template_regression",
+      "split": "development",
+      "turns": [
+        {
+          "question": "请概述《ColBERT: Efficient and Effective Passage Search via Contextualized Late Interaction over BERT》的核心方法。",
+          "intent": "lookup",
+          "targets": [
+            "colbert"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它为什么采用这种设计？只依据原文回答。",
+          "intent": "explain",
+          "targets": [
+            "colbert"
+          ],
+          "constraint": "只依据原文回答",
+          "clarify": false
+        },
+        {
+          "question": "与《BGE M3-Embedding: Multi-Lingual, Multi-Functionality, Multi-Granularity Text Embeddings Through Self-Knowledge Distillation》相比，两者有什么区别？",
+          "intent": "compare",
+          "targets": [
+            "colbert",
+            "bge"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它的效果更好吗？",
+          "intent": null,
+          "targets": [],
+          "clarify": true
+        }
+      ]
+    },
+    {
+      "id": "dialogue-04",
+      "type": "template_regression",
+      "split": "development",
+      "turns": [
+        {
+          "question": "请概述《BGE M3-Embedding: Multi-Lingual, Multi-Functionality, Multi-Granularity Text Embeddings Through Self-Knowledge Distillation》的核心方法。",
+          "intent": "lookup",
+          "targets": [
+            "bge"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它为什么采用这种设计？只依据原文回答。",
+          "intent": "explain",
+          "targets": [
+            "bge"
+          ],
+          "constraint": "只依据原文回答",
+          "clarify": false
+        },
+        {
+          "question": "与《Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection》相比，两者有什么区别？",
+          "intent": "compare",
+          "targets": [
+            "bge",
+            "selfrag"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它的效果更好吗？",
+          "intent": null,
+          "targets": [],
+          "clarify": true
+        }
+      ]
+    },
+    {
+      "id": "dialogue-05",
+      "type": "template_regression",
+      "split": "development",
+      "turns": [
+        {
+          "question": "请概述《Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection》的核心方法。",
+          "intent": "lookup",
+          "targets": [
+            "selfrag"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它为什么采用这种设计？只依据原文回答。",
+          "intent": "explain",
+          "targets": [
+            "selfrag"
+          ],
+          "constraint": "只依据原文回答",
+          "clarify": false
+        },
+        {
+          "question": "与《Interleaving Retrieval with Chain-of-Thought Reasoning for Knowledge-Intensive Multi-Step Questions》相比，两者有什么区别？",
+          "intent": "compare",
+          "targets": [
+            "selfrag",
+            "ircot"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它的效果更好吗？",
+          "intent": null,
+          "targets": [],
+          "clarify": true
+        }
+      ]
+    },
+    {
+      "id": "dialogue-06",
+      "type": "template_regression",
+      "split": "development",
+      "turns": [
+        {
+          "question": "请概述《Interleaving Retrieval with Chain-of-Thought Reasoning for Knowledge-Intensive Multi-Step Questions》的核心方法。",
+          "intent": "lookup",
+          "targets": [
+            "ircot"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它为什么采用这种设计？只依据原文回答。",
+          "intent": "explain",
+          "targets": [
+            "ircot"
+          ],
+          "constraint": "只依据原文回答",
+          "clarify": false
+        },
+        {
+          "question": "与《Lost in the Middle: How Language Models Use Long Contexts》相比，两者有什么区别？",
+          "intent": "compare",
+          "targets": [
+            "ircot",
+            "middle"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它的效果更好吗？",
+          "intent": null,
+          "targets": [],
+          "clarify": true
+        }
+      ]
+    },
+    {
+      "id": "dialogue-07",
+      "type": "template_regression",
+      "split": "development",
+      "turns": [
+        {
+          "question": "请概述《Lost in the Middle: How Language Models Use Long Contexts》的核心方法。",
+          "intent": "lookup",
+          "targets": [
+            "middle"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它为什么采用这种设计？只依据原文回答。",
+          "intent": "explain",
+          "targets": [
+            "middle"
+          ],
+          "constraint": "只依据原文回答",
+          "clarify": false
+        },
+        {
+          "question": "与《Corrective Retrieval Augmented Generation》相比，两者有什么区别？",
+          "intent": "compare",
+          "targets": [
+            "middle",
+            "crag"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它的效果更好吗？",
+          "intent": null,
+          "targets": [],
+          "clarify": true
+        }
+      ]
+    },
+    {
+      "id": "dialogue-08",
+      "type": "template_regression",
+      "split": "development",
+      "turns": [
+        {
+          "question": "请概述《Corrective Retrieval Augmented Generation》的核心方法。",
+          "intent": "lookup",
+          "targets": [
+            "crag"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它为什么采用这种设计？只依据原文回答。",
+          "intent": "explain",
+          "targets": [
+            "crag"
+          ],
+          "constraint": "只依据原文回答",
+          "clarify": false
+        },
+        {
+          "question": "与《Dense Passage Retrieval for Open-Domain Question Answering》相比，两者有什么区别？",
+          "intent": "compare",
+          "targets": [
+            "crag",
+            "dpr"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它的效果更好吗？",
+          "intent": null,
+          "targets": [],
+          "clarify": true
+        }
+      ]
+    },
+    {
+      "id": "dialogue-09",
+      "type": "template_regression",
+      "split": "development",
+      "turns": [
+        {
+          "question": "请概述《Dense Passage Retrieval for Open-Domain Question Answering》的核心方法。",
+          "intent": "lookup",
+          "targets": [
+            "dpr"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它为什么采用这种设计？只依据原文回答。",
+          "intent": "explain",
+          "targets": [
+            "dpr"
+          ],
+          "constraint": "只依据原文回答",
+          "clarify": false
+        },
+        {
+          "question": "与《ColBERT: Efficient and Effective Passage Search via Contextualized Late Interaction over BERT》相比，两者有什么区别？",
+          "intent": "compare",
+          "targets": [
+            "dpr",
+            "colbert"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它的效果更好吗？",
+          "intent": null,
+          "targets": [],
+          "clarify": true
+        }
+      ]
+    },
+    {
+      "id": "dialogue-10",
+      "type": "template_regression",
+      "split": "development",
+      "turns": [
+        {
+          "question": "请概述《Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks》的核心方法。",
+          "intent": "lookup",
+          "targets": [
+            "rag"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它为什么采用这种设计？只依据原文回答。",
+          "intent": "explain",
+          "targets": [
+            "rag"
+          ],
+          "constraint": "只依据原文回答",
+          "clarify": false
+        },
+        {
+          "question": "与《BGE M3-Embedding: Multi-Lingual, Multi-Functionality, Multi-Granularity Text Embeddings Through Self-Knowledge Distillation》相比，两者有什么区别？",
+          "intent": "compare",
+          "targets": [
+            "rag",
+            "bge"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它的效果更好吗？",
+          "intent": null,
+          "targets": [],
+          "clarify": true
+        }
+      ]
+    },
+    {
+      "id": "dialogue-11",
+      "type": "template_regression",
+      "split": "development",
+      "turns": [
+        {
+          "question": "请概述《ColBERT: Efficient and Effective Passage Search via Contextualized Late Interaction over BERT》的核心方法。",
+          "intent": "lookup",
+          "targets": [
+            "colbert"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它为什么采用这种设计？只依据原文回答。",
+          "intent": "explain",
+          "targets": [
+            "colbert"
+          ],
+          "constraint": "只依据原文回答",
+          "clarify": false
+        },
+        {
+          "question": "与《Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection》相比，两者有什么区别？",
+          "intent": "compare",
+          "targets": [
+            "colbert",
+            "selfrag"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它的效果更好吗？",
+          "intent": null,
+          "targets": [],
+          "clarify": true
+        }
+      ]
+    },
+    {
+      "id": "dialogue-12",
+      "type": "template_regression",
+      "split": "development",
+      "turns": [
+        {
+          "question": "请概述《BGE M3-Embedding: Multi-Lingual, Multi-Functionality, Multi-Granularity Text Embeddings Through Self-Knowledge Distillation》的核心方法。",
+          "intent": "lookup",
+          "targets": [
+            "bge"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它为什么采用这种设计？只依据原文回答。",
+          "intent": "explain",
+          "targets": [
+            "bge"
+          ],
+          "constraint": "只依据原文回答",
+          "clarify": false
+        },
+        {
+          "question": "与《Interleaving Retrieval with Chain-of-Thought Reasoning for Knowledge-Intensive Multi-Step Questions》相比，两者有什么区别？",
+          "intent": "compare",
+          "targets": [
+            "bge",
+            "ircot"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它的效果更好吗？",
+          "intent": null,
+          "targets": [],
+          "clarify": true
+        }
+      ]
+    },
+    {
+      "id": "dialogue-13",
+      "type": "template_regression",
+      "split": "development",
+      "turns": [
+        {
+          "question": "请概述《Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection》的核心方法。",
+          "intent": "lookup",
+          "targets": [
+            "selfrag"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它为什么采用这种设计？只依据原文回答。",
+          "intent": "explain",
+          "targets": [
+            "selfrag"
+          ],
+          "constraint": "只依据原文回答",
+          "clarify": false
+        },
+        {
+          "question": "与《Lost in the Middle: How Language Models Use Long Contexts》相比，两者有什么区别？",
+          "intent": "compare",
+          "targets": [
+            "selfrag",
+            "middle"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它的效果更好吗？",
+          "intent": null,
+          "targets": [],
+          "clarify": true
+        }
+      ]
+    },
+    {
+      "id": "dialogue-14",
+      "type": "template_regression",
+      "split": "development",
+      "turns": [
+        {
+          "question": "请概述《Interleaving Retrieval with Chain-of-Thought Reasoning for Knowledge-Intensive Multi-Step Questions》的核心方法。",
+          "intent": "lookup",
+          "targets": [
+            "ircot"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它为什么采用这种设计？只依据原文回答。",
+          "intent": "explain",
+          "targets": [
+            "ircot"
+          ],
+          "constraint": "只依据原文回答",
+          "clarify": false
+        },
+        {
+          "question": "与《Corrective Retrieval Augmented Generation》相比，两者有什么区别？",
+          "intent": "compare",
+          "targets": [
+            "ircot",
+            "crag"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它的效果更好吗？",
+          "intent": null,
+          "targets": [],
+          "clarify": true
+        }
+      ]
+    },
+    {
+      "id": "dialogue-15",
+      "type": "template_regression",
+      "split": "development",
+      "turns": [
+        {
+          "question": "请概述《Lost in the Middle: How Language Models Use Long Contexts》的核心方法。",
+          "intent": "lookup",
+          "targets": [
+            "middle"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它为什么采用这种设计？只依据原文回答。",
+          "intent": "explain",
+          "targets": [
+            "middle"
+          ],
+          "constraint": "只依据原文回答",
+          "clarify": false
+        },
+        {
+          "question": "与《Dense Passage Retrieval for Open-Domain Question Answering》相比，两者有什么区别？",
+          "intent": "compare",
+          "targets": [
+            "middle",
+            "dpr"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它的效果更好吗？",
+          "intent": null,
+          "targets": [],
+          "clarify": true
+        }
+      ]
+    },
+    {
+      "id": "dialogue-16",
+      "type": "template_regression",
+      "split": "development",
+      "turns": [
+        {
+          "question": "请概述《Corrective Retrieval Augmented Generation》的核心方法。",
+          "intent": "lookup",
+          "targets": [
+            "crag"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它为什么采用这种设计？只依据原文回答。",
+          "intent": "explain",
+          "targets": [
+            "crag"
+          ],
+          "constraint": "只依据原文回答",
+          "clarify": false
+        },
+        {
+          "question": "与《Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks》相比，两者有什么区别？",
+          "intent": "compare",
+          "targets": [
+            "crag",
+            "rag"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它的效果更好吗？",
+          "intent": null,
+          "targets": [],
+          "clarify": true
+        }
+      ]
+    },
+    {
+      "id": "dialogue-17",
+      "type": "template_regression",
+      "split": "development",
+      "turns": [
+        {
+          "question": "请概述《Dense Passage Retrieval for Open-Domain Question Answering》的核心方法。",
+          "intent": "lookup",
+          "targets": [
+            "dpr"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它为什么采用这种设计？只依据原文回答。",
+          "intent": "explain",
+          "targets": [
+            "dpr"
+          ],
+          "constraint": "只依据原文回答",
+          "clarify": false
+        },
+        {
+          "question": "与《BGE M3-Embedding: Multi-Lingual, Multi-Functionality, Multi-Granularity Text Embeddings Through Self-Knowledge Distillation》相比，两者有什么区别？",
+          "intent": "compare",
+          "targets": [
+            "dpr",
+            "bge"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它的效果更好吗？",
+          "intent": null,
+          "targets": [],
+          "clarify": true
+        }
+      ]
+    },
+    {
+      "id": "dialogue-18",
+      "type": "template_regression",
+      "split": "development",
+      "turns": [
+        {
+          "question": "请概述《Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks》的核心方法。",
+          "intent": "lookup",
+          "targets": [
+            "rag"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它为什么采用这种设计？只依据原文回答。",
+          "intent": "explain",
+          "targets": [
+            "rag"
+          ],
+          "constraint": "只依据原文回答",
+          "clarify": false
+        },
+        {
+          "question": "与《Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection》相比，两者有什么区别？",
+          "intent": "compare",
+          "targets": [
+            "rag",
+            "selfrag"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它的效果更好吗？",
+          "intent": null,
+          "targets": [],
+          "clarify": true
+        }
+      ]
+    },
+    {
+      "id": "dialogue-19",
+      "type": "template_regression",
+      "split": "development",
+      "turns": [
+        {
+          "question": "请概述《ColBERT: Efficient and Effective Passage Search via Contextualized Late Interaction over BERT》的核心方法。",
+          "intent": "lookup",
+          "targets": [
+            "colbert"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它为什么采用这种设计？只依据原文回答。",
+          "intent": "explain",
+          "targets": [
+            "colbert"
+          ],
+          "constraint": "只依据原文回答",
+          "clarify": false
+        },
+        {
+          "question": "与《Interleaving Retrieval with Chain-of-Thought Reasoning for Knowledge-Intensive Multi-Step Questions》相比，两者有什么区别？",
+          "intent": "compare",
+          "targets": [
+            "colbert",
+            "ircot"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它的效果更好吗？",
+          "intent": null,
+          "targets": [],
+          "clarify": true
+        }
+      ]
+    },
+    {
+      "id": "dialogue-20",
+      "type": "template_regression",
+      "split": "development",
+      "turns": [
+        {
+          "question": "请概述《BGE M3-Embedding: Multi-Lingual, Multi-Functionality, Multi-Granularity Text Embeddings Through Self-Knowledge Distillation》的核心方法。",
+          "intent": "lookup",
+          "targets": [
+            "bge"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它为什么采用这种设计？只依据原文回答。",
+          "intent": "explain",
+          "targets": [
+            "bge"
+          ],
+          "constraint": "只依据原文回答",
+          "clarify": false
+        },
+        {
+          "question": "与《Lost in the Middle: How Language Models Use Long Contexts》相比，两者有什么区别？",
+          "intent": "compare",
+          "targets": [
+            "bge",
+            "middle"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它的效果更好吗？",
+          "intent": null,
+          "targets": [],
+          "clarify": true
+        }
+      ]
+    },
+    {
+      "id": "dialogue-21",
+      "type": "template_regression",
+      "split": "test",
+      "turns": [
+        {
+          "question": "请概述《Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection》的核心方法。",
+          "intent": "lookup",
+          "targets": [
+            "selfrag"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它为什么采用这种设计？只依据原文回答。",
+          "intent": "explain",
+          "targets": [
+            "selfrag"
+          ],
+          "constraint": "只依据原文回答",
+          "clarify": false
+        },
+        {
+          "question": "与《Corrective Retrieval Augmented Generation》相比，两者有什么区别？",
+          "intent": "compare",
+          "targets": [
+            "selfrag",
+            "crag"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它的效果更好吗？",
+          "intent": null,
+          "targets": [],
+          "clarify": true
+        }
+      ]
+    },
+    {
+      "id": "dialogue-22",
+      "type": "template_regression",
+      "split": "test",
+      "turns": [
+        {
+          "question": "请概述《Interleaving Retrieval with Chain-of-Thought Reasoning for Knowledge-Intensive Multi-Step Questions》的核心方法。",
+          "intent": "lookup",
+          "targets": [
+            "ircot"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它为什么采用这种设计？只依据原文回答。",
+          "intent": "explain",
+          "targets": [
+            "ircot"
+          ],
+          "constraint": "只依据原文回答",
+          "clarify": false
+        },
+        {
+          "question": "与《Dense Passage Retrieval for Open-Domain Question Answering》相比，两者有什么区别？",
+          "intent": "compare",
+          "targets": [
+            "ircot",
+            "dpr"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它的效果更好吗？",
+          "intent": null,
+          "targets": [],
+          "clarify": true
+        }
+      ]
+    },
+    {
+      "id": "dialogue-23",
+      "type": "template_regression",
+      "split": "test",
+      "turns": [
+        {
+          "question": "请概述《Lost in the Middle: How Language Models Use Long Contexts》的核心方法。",
+          "intent": "lookup",
+          "targets": [
+            "middle"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它为什么采用这种设计？只依据原文回答。",
+          "intent": "explain",
+          "targets": [
+            "middle"
+          ],
+          "constraint": "只依据原文回答",
+          "clarify": false
+        },
+        {
+          "question": "与《Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks》相比，两者有什么区别？",
+          "intent": "compare",
+          "targets": [
+            "middle",
+            "rag"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它的效果更好吗？",
+          "intent": null,
+          "targets": [],
+          "clarify": true
+        }
+      ]
+    },
+    {
+      "id": "dialogue-24",
+      "type": "template_regression",
+      "split": "test",
+      "turns": [
+        {
+          "question": "请概述《Corrective Retrieval Augmented Generation》的核心方法。",
+          "intent": "lookup",
+          "targets": [
+            "crag"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它为什么采用这种设计？只依据原文回答。",
+          "intent": "explain",
+          "targets": [
+            "crag"
+          ],
+          "constraint": "只依据原文回答",
+          "clarify": false
+        },
+        {
+          "question": "与《ColBERT: Efficient and Effective Passage Search via Contextualized Late Interaction over BERT》相比，两者有什么区别？",
+          "intent": "compare",
+          "targets": [
+            "crag",
+            "colbert"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它的效果更好吗？",
+          "intent": null,
+          "targets": [],
+          "clarify": true
+        }
+      ]
+    },
+    {
+      "id": "dialogue-25",
+      "type": "template_regression",
+      "split": "test",
+      "turns": [
+        {
+          "question": "请概述《Dense Passage Retrieval for Open-Domain Question Answering》的核心方法。",
+          "intent": "lookup",
+          "targets": [
+            "dpr"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它为什么采用这种设计？只依据原文回答。",
+          "intent": "explain",
+          "targets": [
+            "dpr"
+          ],
+          "constraint": "只依据原文回答",
+          "clarify": false
+        },
+        {
+          "question": "与《Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection》相比，两者有什么区别？",
+          "intent": "compare",
+          "targets": [
+            "dpr",
+            "selfrag"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它的效果更好吗？",
+          "intent": null,
+          "targets": [],
+          "clarify": true
+        }
+      ]
+    },
+    {
+      "id": "dialogue-26",
+      "type": "template_regression",
+      "split": "test",
+      "turns": [
+        {
+          "question": "请概述《Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks》的核心方法。",
+          "intent": "lookup",
+          "targets": [
+            "rag"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它为什么采用这种设计？只依据原文回答。",
+          "intent": "explain",
+          "targets": [
+            "rag"
+          ],
+          "constraint": "只依据原文回答",
+          "clarify": false
+        },
+        {
+          "question": "与《Interleaving Retrieval with Chain-of-Thought Reasoning for Knowledge-Intensive Multi-Step Questions》相比，两者有什么区别？",
+          "intent": "compare",
+          "targets": [
+            "rag",
+            "ircot"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它的效果更好吗？",
+          "intent": null,
+          "targets": [],
+          "clarify": true
+        }
+      ]
+    },
+    {
+      "id": "dialogue-27",
+      "type": "template_regression",
+      "split": "test",
+      "turns": [
+        {
+          "question": "请概述《ColBERT: Efficient and Effective Passage Search via Contextualized Late Interaction over BERT》的核心方法。",
+          "intent": "lookup",
+          "targets": [
+            "colbert"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它为什么采用这种设计？只依据原文回答。",
+          "intent": "explain",
+          "targets": [
+            "colbert"
+          ],
+          "constraint": "只依据原文回答",
+          "clarify": false
+        },
+        {
+          "question": "与《Lost in the Middle: How Language Models Use Long Contexts》相比，两者有什么区别？",
+          "intent": "compare",
+          "targets": [
+            "colbert",
+            "middle"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它的效果更好吗？",
+          "intent": null,
+          "targets": [],
+          "clarify": true
+        }
+      ]
+    },
+    {
+      "id": "dialogue-28",
+      "type": "template_regression",
+      "split": "test",
+      "turns": [
+        {
+          "question": "请概述《BGE M3-Embedding: Multi-Lingual, Multi-Functionality, Multi-Granularity Text Embeddings Through Self-Knowledge Distillation》的核心方法。",
+          "intent": "lookup",
+          "targets": [
+            "bge"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它为什么采用这种设计？只依据原文回答。",
+          "intent": "explain",
+          "targets": [
+            "bge"
+          ],
+          "constraint": "只依据原文回答",
+          "clarify": false
+        },
+        {
+          "question": "与《Corrective Retrieval Augmented Generation》相比，两者有什么区别？",
+          "intent": "compare",
+          "targets": [
+            "bge",
+            "crag"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它的效果更好吗？",
+          "intent": null,
+          "targets": [],
+          "clarify": true
+        }
+      ]
+    },
+    {
+      "id": "dialogue-29",
+      "type": "template_regression",
+      "split": "test",
+      "turns": [
+        {
+          "question": "请概述《Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection》的核心方法。",
+          "intent": "lookup",
+          "targets": [
+            "selfrag"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它为什么采用这种设计？只依据原文回答。",
+          "intent": "explain",
+          "targets": [
+            "selfrag"
+          ],
+          "constraint": "只依据原文回答",
+          "clarify": false
+        },
+        {
+          "question": "与《Dense Passage Retrieval for Open-Domain Question Answering》相比，两者有什么区别？",
+          "intent": "compare",
+          "targets": [
+            "selfrag",
+            "dpr"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它的效果更好吗？",
+          "intent": null,
+          "targets": [],
+          "clarify": true
+        }
+      ]
+    },
+    {
+      "id": "dialogue-30",
+      "type": "template_regression",
+      "split": "test",
+      "turns": [
+        {
+          "question": "请概述《Interleaving Retrieval with Chain-of-Thought Reasoning for Knowledge-Intensive Multi-Step Questions》的核心方法。",
+          "intent": "lookup",
+          "targets": [
+            "ircot"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它为什么采用这种设计？只依据原文回答。",
+          "intent": "explain",
+          "targets": [
+            "ircot"
+          ],
+          "constraint": "只依据原文回答",
+          "clarify": false
+        },
+        {
+          "question": "与《Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks》相比，两者有什么区别？",
+          "intent": "compare",
+          "targets": [
+            "ircot",
+            "rag"
+          ],
+          "clarify": false
+        },
+        {
+          "question": "它的效果更好吗？",
+          "intent": null,
+          "targets": [],
+          "clarify": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+# Linux only: reach a model server listening on the host's 127.0.0.1.
+# Applied only to benchmark containers via --extra-docker-compose.
+services:
+  main:
+    network_mode: host

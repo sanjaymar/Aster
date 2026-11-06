@@ -28,8 +28,10 @@ class Result:
     err: str = ''
 
 
-class DeepSeekAgent:
-    def __init__(self, tools: list, cfg = CONFIG) -> None:
+class MiniHarnessAgent:
+    def __init__(self, tools: list, cfg = CONFIG, event_sink=None, cancelled=None) -> None:
+        self.event_sink = event_sink
+        self.cancelled = cancelled
         self.tools = _to_api_tool(tools)
         self.regis = {t.name: t for t in tools}
         self.last_prompt_tokens = 0
@@ -45,6 +47,12 @@ class DeepSeekAgent:
         self.last_usage = None
         self.last_reasoning = ''
         return
+
+    def _emit(self, kind, **data):
+        if self.cancelled and self.cancelled():
+            raise KeyboardInterrupt
+        if self.event_sink:
+            self.event_sink(kind, data)
 
     def _load_memory(self, cfg = CONFIG) -> list:
         if Path(self.session_memory).exists():
@@ -74,55 +82,46 @@ class DeepSeekAgent:
     def _request_agent(self, client: OpenAI, cfg = CONFIG):
         buffer = ''
         reasoning = ''
-        streaming = False
         truncated = None
-        with client.chat.completions.stream(
-            tools = self.tools,
-            messages = cfg.request_messages(self.message),
-            **cfg.request_options(),
-            stream_options = {'include_usage': True}
-        ) as e:
-            for d in e:
-                if d.type == 'content.delta':
-                    if streaming:
-                        print(d.delta, end = '', flush = True)
-                        self.printed += d.delta
-                        continue
-
-                    buffer += d.delta
-                    n = min(len(buffer), len(self.printed))
-                    if buffer[:n] != self.printed[:n]:
-                        print('\n---- [connection lost, the text above is useless] ----')
-                        print(buffer, end = '', flush = True)
-                        self.printed = buffer
-                        streaming = True
-                    elif len(buffer) > len(self.printed):
-                        print(buffer[len(self.printed):], end = '', flush = True)
-                        self.printed = buffer
-                        streaming = True
-                if d.type == 'chunk':
-                    u = getattr(d.chunk, 'usage', None)
-                    if u is not None:
-                        self.last_usage = u
-                    if d.chunk.choices:
-                        res = getattr(d.chunk.choices[0].delta, 'reasoning_content', None)
-                        if res:
-                            reasoning += res
-                            print(res, end = '', flush = True)
-                if d.type == 'tool_calls.function.arguments.delta':
-                    pass
-
-            try:
+        response = None
+        try:
+            with client.chat.completions.stream(
+                tools = self.tools,
+                messages = cfg.request_messages(self.message),
+                **cfg.request_options(),
+                stream_options = {'include_usage': True}
+            ) as e:
+                for d in e:
+                    if d.type == 'content.delta':
+                        self._emit('text', text=d.delta)
+                        buffer += d.delta
+                        n = min(len(buffer), len(self.printed))
+                        if buffer[:n] != self.printed[:n]:
+                            print('\n---- [connection lost, the text above is useless] ----')
+                            print(buffer, end = '', flush = True)
+                            self.printed = buffer
+                        elif len(buffer) > len(self.printed):
+                            print(buffer[len(self.printed):], end = '', flush = True)
+                            self.printed = buffer
+                    if d.type == 'chunk':
+                        u = getattr(d.chunk, 'usage', None)
+                        if u is not None:
+                            self.last_usage = u
+                        if d.chunk.choices:
+                            res = getattr(d.chunk.choices[0].delta, 'reasoning_content', None)
+                            if res:
+                                reasoning += res
+                                print(res, end = '', flush = True)
                 response = e.get_final_completion()
                 response.choices[0].message.reasoning_content = reasoning
-            except LengthFinishReasonError as ex:
-                truncated = buffer
-                comp = getattr(ex, 'completion', None)
-                u = getattr(comp, 'usage', None) if comp is not None else None
-                if u is not None:
-                    self.last_usage = u
-                response = None
-        if not streaming and self.printed:
+        except LengthFinishReasonError as ex:
+            # The SDK can raise during iteration, before get_final_completion().
+            truncated = buffer
+            comp = getattr(ex, 'completion', None)
+            u = getattr(comp, 'usage', None) if comp is not None else None
+            if u is not None:
+                self.last_usage = u
+        if len(buffer) < len(self.printed):
             print(f'\n--- [reconnection lost, the context above is useless] ----')
             if buffer:
                 print(buffer, end = '', flush = True)
@@ -148,6 +147,10 @@ class DeepSeekAgent:
         by_tool = {}
         try:
             for turn in range(cfg.max_turns_main):
+                self._emit('turn', turn=turn + 1)
+                if turn == 0:
+                    cfg = cfg.resolve_model(client)
+                    self.effective_config = cfg
                 if cfg.wall_budget is not None and time.time() -start >= cfg.wall_budget:
                     outcome = OUTCOME.TIMEOUT
                     print(f'[timeout]: agent run out of the time in the task')
@@ -175,6 +178,7 @@ class DeepSeekAgent:
                     self._save_memory(quiet=True)
                     continue
                 if response.usage:
+                    self._emit('usage', prompt=response.usage.prompt_tokens, completion=response.usage.completion_tokens)
                     self.last_prompt_tokens = response.usage.prompt_tokens
                     last_prompt = response.usage.prompt_tokens
                     prompt_total += response.usage.prompt_tokens
@@ -187,10 +191,12 @@ class DeepSeekAgent:
                     self.message.append(d)
                     try:
                         for tool_call in message.tool_calls:
+                            self._emit('tool_start', id=tool_call.id, name=tool_call.function.name, arguments=tool_call.function.arguments)
                             res = executer.execute_tool(tool_call, cfg =cfg)
+                            self._emit('tool_end', id=tool_call.id, name=tool_call.function.name, ok=res.ok, tag=res.tag, content=res.content)
                             calls += 1
                             by_tool[tool_call.function.name] = by_tool.get(tool_call.function.name, 0) + 1
-                            content = CLIP.clip(res.content)
+                            content = CLIP.clip(res.content, cfg=cfg)
                             if res.ok:
                                 ok += 1
                                 if tool_call.function.name == 'run_todo':
@@ -255,10 +261,12 @@ class DeepSeekAgent:
         return result
 
     def dump_run(self, result: Result, task: str, path: str|None = None, cfg = CONFIG) -> None:
+        cfg = getattr(self, 'effective_config', cfg)
         payload = {
             'profile': cfg.profile,
             'model': cfg.model_main,
-            'thinking': cfg.think_main,
+            'thinking': 'disabled' if cfg.provider == 'local' else cfg.think_main,
+            'provider': cfg.provider,
             'task': task,
             'max_turns_main': cfg.max_turns_main,
             **asdict(result)
@@ -317,3 +325,7 @@ class DeepSeekAgent:
             )
         return
                 
+
+
+# Backwards compatibility for existing upstream imports.
+DeepSeekAgent = MiniHarnessAgent

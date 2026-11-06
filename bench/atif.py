@@ -20,9 +20,7 @@ LOG = "mini_harness.txt"
 SUMMARY_PREFIX = "Here is the summary of the history conversation:"
 MODEL_FALLBACK = "deepseek-v4-flash"
 COMPACTION_EXTRA = {"context_management": {"type": "compaction", "boundary": "replace"}}
-CTX_RE = re.compile(
-    r"\[ctx\]:\s*(\d+)\s*/\s*\d+\s*tokens(?:,\s*out\s*(\d+))?(\s*\[TRUNCATED\])?"
-)
+CTX_RE = re.compile(r"\[ctx\]:\s*(\d+)\s*/\s*\d+\s*tokens(?:,\s*out\s*(\d+))?(\s*\[TRUNCATED\])?")
 
 
 def git_version(repo_root: Path) -> str:
@@ -127,13 +125,7 @@ def _fold(stream: list, summary_ts: dict) -> tuple[list, list]:
             continue
         role = m.get("role")
         content = m.get("content")
-        text = (
-            content
-            if isinstance(content, str)
-            else ""
-            if content is None
-            else str(content)
-        )
+        text = content if isinstance(content, str) else "" if content is None else str(content)
         looks_summary = role == "assistant" and text.startswith(SUMMARY_PREFIX)
         if i in summary_ts and (not looks_summary):
             mismatches += 1
@@ -182,9 +174,7 @@ def _fold(stream: list, summary_ts: dict) -> tuple[list, list]:
             orphans += 1
             prev = steps[-1] if steps else None
             if prev is not None and prev.source == "agent":
-                res = ObservationResult(
-                    source_call_id=None, content=str(m.get("content") or "")
-                )
+                res = ObservationResult(source_call_id=None, content=str(m.get("content") or ""))
                 if prev.observation is None:
                     prev.observation = Observation(results=[res])
                 else:
@@ -248,15 +238,11 @@ def build(
             extra={"token_source": src} if src else None,
         ),
         notes="; ".join(notes) if notes else None,
-        extra={"outcome": tele.get("outcome")}
-        if tele and tele.get("outcome")
-        else None,
+        extra={"outcome": tele.get("outcome")} if tele and tele.get("outcome") else None,
     )
 
 
 def write_trajectory(agent_dir: Path, traj: Trajectory) -> Path:
     out = Path(agent_dir) / "trajectory.json"
-    out.write_text(
-        json.dumps(traj.to_json_dict(), indent=2, ensure_ascii=False), encoding="utf-8"
-    )
+    out.write_text(json.dumps(traj.to_json_dict(), indent=2, ensure_ascii=False), encoding="utf-8")
     return out

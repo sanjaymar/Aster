@@ -9,6 +9,7 @@ import hashlib
 import shutil
 import threading
 import uuid
+import inspect
 
 from pathlib import Path
 from dataclasses import dataclass
@@ -148,6 +149,7 @@ class ToolExecution:
         self.confirm = confirm
         self.last_tool = None
         self.files = {}
+        self.cfg = cfg
         return
 
     def _mark(self, key: str, level: str) -> None:
@@ -250,7 +252,8 @@ class ToolExecution:
                 content += (f'\n\n[You have modified this file {n} times without the task passing].\nConsider re-reading it in full, or reconsidering the approach')
         return content
                 
-    def execute_tool(self, tool_call, cfg = CONFIG) -> ToolItem:
+    def execute_tool(self, tool_call, cfg = None) -> ToolItem:
+        cfg = cfg or self.cfg
         tool = self.regis.get(tool_call.function.name)
         if tool is None:
             return ToolItem(f'[{TAG.UNKNOWN_TOOL}]: the tool is unknown, please check the tool map {'\n'.join(self.regis)}', False, TAG.UNKNOWN_TOOL)
@@ -275,7 +278,7 @@ class ToolExecution:
         self.last_tool = current
         
         try:
-            result = funs(args)
+            result = funs(args, cfg=cfg) if 'cfg' in inspect.signature(funs).parameters else funs(args)
         except Exception as e:
             return ToolItem(f'[{TAG.EXECUTE_FAILED}]: the tool execute failed: {type(e).__name__}: {e}', False, f'{TAG.EXECUTE_FAILED}:{type(e).__name__}')
 

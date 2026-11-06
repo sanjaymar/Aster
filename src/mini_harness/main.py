@@ -1,7 +1,7 @@
 import argparse
 
 from mini_harness.config import CONFIG
-from mini_harness.agent import DeepSeekAgent
+from mini_harness.agent import MiniHarnessAgent
 from mini_harness.tool.box import TOOLS
 from mini_harness.tool.tag import OUTCOME
 
@@ -18,19 +18,19 @@ def main(cfg = CONFIG) -> None:
     parser.add_argument('--task', default = None, help = 'the todo task')
     parser.add_argument('--telemetry-out', default = None, help = 'the json path')
     arg = parser.parse_args()
+    if not cfg.api_key:
+        parser.error(f'set {cfg.api_key_env} or MINI_HARNESS_API_KEY')
 
-    agent = DeepSeekAgent(TOOLS, cfg = cfg)
+    agent = MiniHarnessAgent(TOOLS, cfg = cfg)
     print(f'[mini_harness]: profile = {CONFIG.profile}, work_space = {CONFIG.work_space}, guard = {CONFIG.guard_read}/{CONFIG.guard_write}, turns = {CONFIG.max_turns_main}, wall = {cfg.wall_budget}')
     if not arg.task:
-        agent.run()
+        agent.run(cfg=cfg)
         return
 
-    result = agent.run_task(arg.task)
-    agent.dump_run(result, arg.task, arg.telemetry_out)
+    result = agent.run_task(arg.task, cfg=cfg)
+    agent.dump_run(result, arg.task, arg.telemetry_out, cfg=cfg)
     raise SystemExit(EXIT.get(result.outcome, 1))
 
 
 if __name__ == '__main__':
     main()
-
-    

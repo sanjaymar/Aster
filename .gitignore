@@ -1,6 +1,7 @@
 # Credentials and local environments
 .env
 .env.*
+!.env.example
 .venv/
 venv/
 
@@ -28,4 +29,8 @@ jobs/
 *.tar.gz
 .DS_Store
 /test/
-/tests/
+node_modules/
+web/dist/
+.env.example.local
+/src/aster/static/
+*.tsbuildinfo

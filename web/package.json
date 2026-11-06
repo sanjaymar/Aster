@@ -1,0 +1,40 @@
+{
+    "name": "aster-web",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "vite --host 127.0.0.1",
+        "build": "tsc -b && vite build",
+        "preview": "vite preview --host 127.0.0.1"
+    },
+    "dependencies": {
+        "@tiptap/extension-image": "3.32.2",
+        "@tiptap/extension-list": "3.32.2",
+        "@tiptap/extension-table": "3.32.2",
+        "@tiptap/markdown": "3.32.2",
+        "@tiptap/react": "3.32.2",
+        "@tiptap/starter-kit": "3.32.2",
+        "katex": "0.19.1",
+        "lucide-react": "^0.468.0",
+        "pdfjs-dist": "6.5.438",
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0",
+        "react-markdown": "^10.0.0",
+        "rehype-katex": "7.0.1",
+        "remark-gfm": "^4.0.0",
+        "remark-math": "6.0.0"
+    },
+    "devDependencies": {
+        "@types/node": "^22.0.0",
+        "@types/react": "^19.0.0",
+        "@types/react-dom": "^19.0.0",
+        "@vitejs/plugin-react": "^4.4.0",
+        "postcss": "8.5.32",
+        "typescript": "~5.8.3",
+        "vite": "^6.3.0"
+    },
+    "overrides": {
+        "katex": "0.19.1"
+    }
+}

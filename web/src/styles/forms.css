@@ -1,0 +1,161 @@
+/* forms：按页面职责维护样式。 */
+
+.login .field {
+    margin-top: 28px;
+}
+.modal {
+    padding: 0;
+    background: #fdfdfd;
+    color: var(--ink);
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    width: min(580px, calc(100% - 32px));
+    max-height: calc(100dvh - 56px);
+    box-shadow: 0 30px 100px #32323230;
+    overflow-y: auto;
+}
+.modal.wide {
+    width: min(980px, calc(100% - 40px));
+}
+.modal::backdrop {
+    background: #2b2b2b55;
+    backdrop-filter: blur(3px);
+}
+.modal-head {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--line);
+    background: #fcfcfc;
+}
+.modal-head h2 {
+    font-size: 15px;
+}
+.modal-body {
+    padding: 26px;
+}
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 18px;
+    min-width: 0;
+}
+.field > label {
+    font-size: 12px;
+    color: #797979;
+}
+.field > small {
+    color: #828282;
+    font-size: 10px;
+}
+.field > input,
+.field > select,
+.field > textarea {
+    width: 100%;
+    font-size: 12px;
+}
+.field > textarea {
+    line-height: 1.9;
+}
+.form-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 20px;
+}
+.form-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+    align-items: center;
+    border-top: 1px solid var(--line);
+    margin-top: 23px;
+    padding-top: 20px;
+}
+.upload-zone {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 155px;
+    border: 1px dashed #d2d2d2;
+    border-radius: 8px;
+    background: #f8f8f8;
+    color: #979797;
+    margin-bottom: 24px;
+    overflow: hidden;
+}
+.upload-zone strong {
+    font-size: 13px;
+}
+.upload-zone span {
+    font-size: 10px;
+}
+.upload-zone input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+}
+.csv-stats {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 20px 0;
+}
+.csv-stats > div {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    background: #f3f3f3;
+    padding: 12px 16px;
+    border-radius: 6px;
+    font-size: 11px;
+    color: #929292;
+}
+.csv-stats small {
+    font-size: 10px;
+}
+@media (max-width: 760px) {
+    .modal,
+    .modal.wide {
+        width: calc(100% - 20px);
+        max-height: calc(100dvh - 24px);
+        border-radius: 9px;
+    }
+    .modal-head {
+        padding: 15px 18px;
+    }
+    .modal-body {
+        padding: 20px 17px;
+    }
+    .form-columns {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+    .field > input,
+    .field > select,
+    .field > textarea {
+        font-size: 16px;
+    }
+    .field > label {
+        font-size: 12px;
+    }
+    .form-footer {
+        gap: 10px;
+    }
+    .form-footer > .muted {
+        font-size: 10px;
+    }
+    .form-footer .button {
+        font-size: 12px;
+    }
+}

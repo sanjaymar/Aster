@@ -1,0 +1,732 @@
+{
+  "kind": "live_model_engineering_regression",
+  "date": "2026-11-01",
+  "metrics": {
+    "behavior_pass": 5,
+    "cases": 5
+  },
+  "note": "Five chosen behavior cases, with failed cases retested after fixes; not independent human QA/citation accuracy. Reused passing cases are retained from previous runs.",
+  "retrieval_status": {
+    "available": true,
+    "dependencies": true,
+    "embedding_ready": true,
+    "reranker_ready": true,
+    "embedding_model": "BAAI/bge-m3",
+    "reranker_model": "BAAI/bge-reranker-v2-m3",
+    "device": "cpu",
+    "backend": "hybrid",
+    "configured_mode": "auto",
+    "chunker": "paragraph-window-v1-1400-200",
+    "index_type": "FAISS IndexFlatIP",
+    "degraded": false
+  },
+  "cases": [
+    {
+      "case_id": "lookup",
+      "prompt": "DPR 论文的核心检索方法是什么？只说明论文明确报告的方法，不推测效果。",
+      "expected": "answer",
+      "actual": "answer",
+      "status": "completed",
+      "behavior_pass": true,
+      "model": "qwen3.8-27b",
+      "answer": "根据目前可核对的证据：\n\n- DPR 使用稠密编码器将文本段落映射为低维实值向量并建立索引，以便在运行时高效检索与输入问题相关的 top-k 段落。 [[C:21749fe9a84e5cf3ac4a863e667a2ea4]]\n\n- DPR 的嵌入由少量问题和段落通过简单双编码器框架学习得到，且检索可仅用稠密表示实现。 [[C:205d1c4bd64d55b18e6e325f10f6d3ad]]\n\n- DPR 的训练目标是优化嵌入以最大化问题向量与相关段落向量的内积，并使用比较批内所有问题—段落对的目标函数。 [[C:806e691a64a05ab0816f45aaedab5e59]]\n\n- DPR 采用批内负样本训练，并加入高 BM25 分数但不含答案字符串的困难负样本；加入一个 BM25 负样本能显著提升结果，加入两个则无进一步帮助。 [[C:2a0af59a93eb5effb3698b1de44f2788]]\n\n- DPR 方案不依赖额外预训练或复杂联合训练方案，而是使用 BERT 预训练模型和双编码器架构，仅用问题和段落（或答案）对进行训练。 [[C:806e691a64a05ab0816f45aaedab5e59]] [[C:8285b5fff01b5400aef1b79e359f9de5]]\n\n- 稠密潜在语义编码与稀疏表示（如 TF-IDF/BM25）在设计上互补，能更好匹配同义词或改写表达。 [[C:cc814a2a427e5dc8b74d7b6de3dbdf17]] [[C:d6d41850c0f156fbb2433d287ad3903d]]",
+      "query_plan": {
+        "intent": "lookup",
+        "standalone_query": "Dense Passage Retrieval for Open-Domain Question Answering 论文中明确报告的核心检索方法是什么？",
+        "queries": [
+          "Dense Passage Retrieval for Open-Domain Question Answering core retrieval method",
+          "DPR dense passage retrieval model architecture and training objective"
+        ],
+        "targets": [
+          "c9ecca7ce3b94a2285aa7ec674633219"
+        ],
+        "resolved_entities": [
+          "DPR",
+          "Dense Passage Retrieval for Open-Domain Question Answering"
+        ],
+        "constraints": [
+          "只说明论文明确报告的方法",
+          "不推测效果"
+        ],
+        "needs_clarification": false,
+        "clarification": ""
+      },
+      "stages": [
+        {
+          "name": "Guardrails",
+          "attempt": 1,
+          "status": "completed",
+          "duration_ms": 29.71,
+          "usage": {}
+        },
+        {
+          "name": "NLU",
+          "attempt": 1,
+          "status": "completed",
+          "duration_ms": 51563.51,
+          "usage": {
+            "prompt_tokens": 759,
+            "completion_tokens": 200
+          }
+        },
+        {
+          "name": "Retrieve",
+          "attempt": 1,
+          "status": "completed",
+          "duration_ms": 10034.48,
+          "usage": {}
+        },
+        {
+          "name": "Rerank",
+          "attempt": 1,
+          "status": "completed",
+          "duration_ms": 15740.87,
+          "usage": {}
+        },
+        {
+          "name": "Reflect",
+          "attempt": 1,
+          "status": "completed",
+          "duration_ms": 121332.97,
+          "usage": {
+            "prompt_tokens": 5618,
+            "completion_tokens": 102
+          }
+        },
+        {
+          "name": "Generate",
+          "attempt": 1,
+          "status": "completed",
+          "duration_ms": 253972.5,
+          "usage": {
+            "prompt_tokens": 7961,
+            "completion_tokens": 917
+          }
+        },
+        {
+          "name": "Memory",
+          "attempt": 1,
+          "status": "completed",
+          "duration_ms": 41.7,
+          "usage": {}
+        }
+      ],
+      "claims": [
+        {
+          "text": "DPR 使用稠密编码器将文本段落映射为低维实值向量并建立索引，以便在运行时高效检索与输入问题相关的 top-k 段落。",
+          "citations": [
+            "[[C:21749fe9a84e5cf3ac4a863e667a2ea4]]"
+          ],
+          "verdict": "supported",
+          "reason": "证据明确描述了 DPR 使用稠密编码器映射段落并建立索引以检索 top-k 段落。"
+        },
+        {
+          "text": "DPR 的嵌入由少量问题和段落通过简单双编码器框架学习得到，且检索可仅用稠密表示实现。",
+          "citations": [
+            "[[C:205d1c4bd64d55b18e6e325f10f6d3ad]]"
+          ],
+          "verdict": "supported",
+          "reason": "摘要明确指出检索可用稠密表示实现，嵌入由少量数据通过双编码器框架学习。"
+        },
+        {
+          "text": "DPR 的训练目标是优化嵌入以最大化问题向量与相关段落向量的内积，并使用比较批内所有问题—段落对的目标函数。",
+          "citations": [
+            "[[C:806e691a64a05ab0816f45aaedab5e59]]"
+          ],
+          "verdict": "supported",
+          "reason": "引言中明确陈述了最终方案是最大化内积并使用批内比较的目标函数。"
+        },
+        {
+          "text": "DPR 采用批内负样本训练，并加入高 BM25 分数但不含答案字符串的困难负样本；加入一个 BM25 负样本能显著提升结果，加入两个则无进一步帮助。",
+          "citations": [
+            "[[C:2a0af59a93eb5effb3698b1de44f2788]]"
+          ],
+          "verdict": "supported",
+          "reason": "证据详细描述了批内负样本策略及加入不同数量 BM25 困难负样本的实验结果。"
+        },
+        {
+          "text": "DPR 方案不依赖额外预训练或复杂联合训练方案，而是使用 BERT 预训练模型和双编码器架构，仅用问题和段落（或答案）对进行训练。",
+          "citations": [
+            "[[C:806e691a64a05ab0816f45aaedab5e59]]",
+            "[[C:8285b5fff01b5400aef1b79e359f9de5]]"
+          ],
+          "verdict": "supported",
+          "reason": "证据明确指出模型不依赖额外预训练或复杂联合训练，使用 BERT 和双编码器架构。"
+        },
+        {
+          "text": "稠密潜在语义编码与稀疏表示（如 TF-IDF/BM25）在设计上互补，能更好匹配同义词或改写表达。",
+          "citations": [
+            "[[C:cc814a2a427e5dc8b74d7b6de3dbdf17]]",
+            "[[C:d6d41850c0f156fbb2433d287ad3903d]]"
+          ],
+          "verdict": "supported",
+          "reason": "引言部分明确对比了稠密与稀疏表示，指出稠密编码在匹配同义词方面的优势。"
+        }
+      ],
+      "memory": {
+        "schema_version": 1,
+        "focus": [
+          "DPR",
+          "Dense Passage Retrieval for Open-Domain Question Answering"
+        ],
+        "constraints": [
+          "只说明论文明确报告的方法",
+          "不推测效果"
+        ],
+        "open_questions": [],
+        "recent_questions": [
+          "DPR 论文的核心检索方法是什么？只说明论文明确报告的方法，不推测效果。"
+        ],
+        "evidence_refs": [
+          "[[C:21749fe9a84e5cf3ac4a863e667a2ea4]]",
+          "[[C:205d1c4bd64d55b18e6e325f10f6d3ad]]",
+          "[[C:806e691a64a05ab0816f45aaedab5e59]]",
+          "[[C:2a0af59a93eb5effb3698b1de44f2788]]",
+          "[[C:806e691a64a05ab0816f45aaedab5e59]]",
+          "[[C:8285b5fff01b5400aef1b79e359f9de5]]",
+          "[[C:cc814a2a427e5dc8b74d7b6de3dbdf17]]",
+          "[[C:d6d41850c0f156fbb2433d287ad3903d]]"
+        ],
+        "turns": 1,
+        "answerability": "answer",
+        "compacted": false
+      }
+    },
+    {
+      "case_id": "insufficient",
+      "prompt": "DPR 在2026年新冠患者临床试验中的存活率是多少？请给出该研究报告的具体数值。",
+      "expected": "refuse",
+      "actual": "refuse",
+      "status": "completed",
+      "behavior_pass": true,
+      "model": "qwen3.8-27b",
+      "answer": "问题超出了当前科研资料问答范围",
+      "query_plan": {
+        "intent": "out_of_scope",
+        "standalone_query": "DPR 在2026年新冠患者临床试验中的存活率是多少？请给出该研究报告的具体数值。",
+        "queries": [
+          "DPR 2026 novel coronavirus patient clinical trial survival rate",
+          "Dense Passage Retrieval clinical trial survival rate 2026"
+        ],
+        "targets": [],
+        "resolved_entities": [
+          "DPR"
+        ],
+        "constraints": [
+          "请给出该研究报告的具体数值"
+        ],
+        "needs_clarification": false,
+        "clarification": ""
+      },
+      "stages": [
+        {
+          "name": "Guardrails",
+          "attempt": 1,
+          "status": "completed",
+          "duration_ms": 21.74,
+          "usage": {}
+        },
+        {
+          "name": "NLU",
+          "attempt": 1,
+          "status": "completed",
+          "duration_ms": 145576.29,
+          "usage": {
+            "prompt_tokens": 836,
+            "completion_tokens": 150
+          }
+        },
+        {
+          "name": "Retrieve",
+          "attempt": 1,
+          "status": "skipped",
+          "duration_ms": 0.01,
+          "usage": {}
+        },
+        {
+          "name": "Rerank",
+          "attempt": 1,
+          "status": "skipped",
+          "duration_ms": 0.01,
+          "usage": {}
+        },
+        {
+          "name": "Reflect",
+          "attempt": 1,
+          "status": "skipped",
+          "duration_ms": 0.01,
+          "usage": {}
+        },
+        {
+          "name": "Generate",
+          "attempt": 1,
+          "status": "skipped",
+          "duration_ms": 0.01,
+          "usage": {}
+        },
+        {
+          "name": "Memory",
+          "attempt": 1,
+          "status": "completed",
+          "duration_ms": 41.79,
+          "usage": {}
+        }
+      ],
+      "claims": [],
+      "memory": {
+        "schema_version": 1,
+        "focus": [
+          "DPR"
+        ],
+        "constraints": [
+          "只说明论文明确报告的方法",
+          "不推测效果",
+          "请给出该研究报告的具体数值"
+        ],
+        "open_questions": [],
+        "recent_questions": [
+          "DPR 论文的核心检索方法是什么？只说明论文明确报告的方法，不推测效果。",
+          "它与 BM25 的表示方式有什么区别？请延续刚才的要求。",
+          "DPR 在2026年新冠患者临床试验中的存活率是多少？请给出该研究报告的具体数值。"
+        ],
+        "evidence_refs": [],
+        "turns": 3,
+        "answerability": "refuse",
+        "compacted": false
+      }
+    },
+    {
+      "case_id": "boundary",
+      "prompt": "今天北京天气怎么样，适合出去玩吗？",
+      "expected": "refuse",
+      "actual": "refuse",
+      "status": "completed",
+      "behavior_pass": true,
+      "model": "qwen3.8-27b",
+      "answer": "问题超出了当前科研资料问答范围",
+      "query_plan": {
+        "intent": "out_of_scope",
+        "standalone_query": "今天北京天气怎么样，适合出去玩吗？",
+        "queries": [
+          "今天北京天气怎么样，适合出去玩吗？"
+        ],
+        "targets": [],
+        "resolved_entities": [],
+        "constraints": [],
+        "needs_clarification": false,
+        "clarification": ""
+      },
+      "stages": [
+        {
+          "name": "Guardrails",
+          "attempt": 1,
+          "status": "completed",
+          "duration_ms": 22.17,
+          "usage": {}
+        },
+        {
+          "name": "NLU",
+          "attempt": 1,
+          "status": "completed",
+          "duration_ms": 5010.46,
+          "usage": {
+            "prompt_tokens": 747,
+            "completion_tokens": 90
+          }
+        },
+        {
+          "name": "Retrieve",
+          "attempt": 1,
+          "status": "skipped",
+          "duration_ms": 0.0,
+          "usage": {}
+        },
+        {
+          "name": "Rerank",
+          "attempt": 1,
+          "status": "skipped",
+          "duration_ms": 0.01,
+          "usage": {}
+        },
+        {
+          "name": "Reflect",
+          "attempt": 1,
+          "status": "skipped",
+          "duration_ms": 0.01,
+          "usage": {}
+        },
+        {
+          "name": "Generate",
+          "attempt": 1,
+          "status": "skipped",
+          "duration_ms": 0.01,
+          "usage": {}
+        },
+        {
+          "name": "Memory",
+          "attempt": 1,
+          "status": "completed",
+          "duration_ms": 41.73,
+          "usage": {}
+        }
+      ],
+      "claims": [],
+      "memory": {
+        "schema_version": 1,
+        "focus": [],
+        "constraints": [],
+        "open_questions": [],
+        "recent_questions": [
+          "今天北京天气怎么样，适合出去玩吗？"
+        ],
+        "evidence_refs": [],
+        "turns": 1,
+        "answerability": "refuse",
+        "compacted": false
+      }
+    },
+    {
+      "case_id": "ambiguous",
+      "prompt": "它和另一个方法相比怎么样？",
+      "expected": "clarify",
+      "actual": "clarify",
+      "status": "completed",
+      "behavior_pass": true,
+      "model": "qwen3.8-27b",
+      "answer": "你指的是哪篇文献或哪个方法？请给出名称，或明确选择一个比较对象。",
+      "query_plan": {
+        "intent": "compare",
+        "standalone_query": "Dense Passage Retrieval for Open-Domain Question Answering 与 ColBERT: Efficient and Effective Passage Search via Contextualized Late Interaction over BERT 相比怎么样？",
+        "queries": [
+          "Dense Passage Retrieval for Open-Domain Question Answering vs ColBERT comparison",
+          "DPR vs ColBERT performance efficiency effectiveness",
+          "Dense Passage Retrieval ColBERT late interaction BERT"
+        ],
+        "targets": [
+          "c9ecca7ce3b94a2285aa7ec674633219",
+          "8587e60bf3404bb5b35f277eaf2d2829"
+        ],
+        "resolved_entities": [
+          "Dense Passage Retrieval for Open-Domain Question Answering",
+          "ColBERT: Efficient and Effective Passage Search via Contextualized Late Interaction over BERT"
+        ],
+        "constraints": [],
+        "needs_clarification": true,
+        "clarification": "你指的是哪篇文献或哪个方法？请给出名称，或明确选择一个比较对象。"
+      },
+      "stages": [
+        {
+          "name": "Guardrails",
+          "attempt": 1,
+          "status": "completed",
+          "duration_ms": 24.75,
+          "usage": {}
+        },
+        {
+          "name": "NLU",
+          "attempt": 1,
+          "status": "completed",
+          "duration_ms": 141642.74,
+          "usage": {
+            "prompt_tokens": 745,
+            "completion_tokens": 254
+          }
+        },
+        {
+          "name": "Retrieve",
+          "attempt": 1,
+          "status": "skipped",
+          "duration_ms": 0.0,
+          "usage": {}
+        },
+        {
+          "name": "Rerank",
+          "attempt": 1,
+          "status": "skipped",
+          "duration_ms": 0.01,
+          "usage": {}
+        },
+        {
+          "name": "Reflect",
+          "attempt": 1,
+          "status": "skipped",
+          "duration_ms": 0.01,
+          "usage": {}
+        },
+        {
+          "name": "Generate",
+          "attempt": 1,
+          "status": "skipped",
+          "duration_ms": 0.0,
+          "usage": {}
+        },
+        {
+          "name": "Memory",
+          "attempt": 1,
+          "status": "completed",
+          "duration_ms": 33.33,
+          "usage": {}
+        }
+      ],
+      "claims": [],
+      "memory": {
+        "schema_version": 1,
+        "focus": [
+          "Dense Passage Retrieval for Open-Domain Question Answering",
+          "ColBERT: Efficient and Effective Passage Search via Contextualized Late Interaction over BERT"
+        ],
+        "constraints": [],
+        "open_questions": [],
+        "recent_questions": [
+          "它和另一个方法相比怎么样？"
+        ],
+        "evidence_refs": [],
+        "turns": 1,
+        "answerability": "clarify",
+        "compacted": false
+      }
+    },
+    {
+      "case_id": "followup",
+      "prompt": "它与 BM25 的表示方式有什么区别？请延续刚才的要求，回答不超过150字。",
+      "expected": "answer",
+      "actual": "answer",
+      "status": "completed",
+      "behavior_pass": true,
+      "model": "qwen3.8-27b",
+      "answer": "根据目前可核对的证据：\n\n- BM25 将问题与段落表示为高维稀疏向量，依赖关键词匹配。 [[C:d6d41850c0f156fbb2433d287ad3903d]]\n\n- DPR 使用 BERT 生成 768 维稠密向量。 [[C:92d3a2f1501b58f486bb2dd959b7662e]]\n\n其余主张支持不足，未写入结论；需要核对的内容已记录在本次任务追踪中。",
+      "query_plan": {
+        "intent": "compare",
+        "standalone_query": "DPR (Dense Passage Retrieval) 与 BM25 在表示方式（representation）上的区别是什么？",
+        "queries": [
+          "Dense Passage Retrieval DPR representation method vs BM25 sparse representation",
+          "DPR dense vector representation compared to BM25 term frequency inverse document frequency",
+          "DPR vs BM25 passage representation difference"
+        ],
+        "targets": [
+          "c9ecca7ce3b94a2285aa7ec674633219"
+        ],
+        "resolved_entities": [
+          "DPR",
+          "BM25"
+        ],
+        "constraints": [
+          "只说明论文明确报告的方法",
+          "不推测效果",
+          "回答不超过150字"
+        ],
+        "needs_clarification": false,
+        "clarification": ""
+      },
+      "stages": [
+        {
+          "name": "Guardrails",
+          "attempt": 1,
+          "status": "completed",
+          "duration_ms": 22.54,
+          "usage": {}
+        },
+        {
+          "name": "NLU",
+          "attempt": 1,
+          "status": "completed",
+          "duration_ms": 148585.36,
+          "usage": {
+            "prompt_tokens": 900,
+            "completion_tokens": 221
+          }
+        },
+        {
+          "name": "Retrieve",
+          "attempt": 1,
+          "status": "completed",
+          "duration_ms": 8165.91,
+          "usage": {}
+        },
+        {
+          "name": "Rerank",
+          "attempt": 1,
+          "status": "completed",
+          "duration_ms": 18100.07,
+          "usage": {}
+        },
+        {
+          "name": "Reflect",
+          "attempt": 1,
+          "status": "completed",
+          "duration_ms": 13876.73,
+          "usage": {
+            "prompt_tokens": 6221,
+            "completion_tokens": 144
+          }
+        },
+        {
+          "name": "Generate",
+          "attempt": 1,
+          "status": "completed",
+          "duration_ms": 73822.29,
+          "usage": {
+            "prompt_tokens": 1806,
+            "completion_tokens": 449
+          }
+        },
+        {
+          "name": "Memory",
+          "attempt": 1,
+          "status": "completed",
+          "duration_ms": 33.36,
+          "usage": {}
+        }
+      ],
+      "claims": [
+        {
+          "text": "BM25 将问题与段落表示为高维稀疏向量，依赖关键词匹配。",
+          "citations": [
+            "[[C:d6d41850c0f156fbb2433d287ad3903d]]"
+          ],
+          "verdict": "supported",
+          "reason": "证据明确提到 BM25 匹配关键词，并将问题和上下文视为高维稀疏向量。"
+        },
+        {
+          "text": "DPR 使用 BERT 生成 768 维稠密向量。",
+          "citations": [
+            "[[C:92d3a2f1501b58f486bb2dd959b7662e]]"
+          ],
+          "verdict": "supported",
+          "reason": "证据指出使用 BERT 网络，取 [CLS] 表示，维度 sod=768。"
+        },
+        {
+          "text": "DPR 通过内积捕捉语义关系。",
+          "citations": [
+            "[[C:92d3a2f1501b58f486bb2dd959b7662e]]",
+            "[[C:d6d41850c0f156fbb2433d287ad3903d]]"
+          ],
+          "verdict": "partial",
+          "reason": "证据支持使用点积相似度，但“捕捉语义关系”是设计意图的推断，非直接观察。"
+        }
+      ],
+      "memory": {
+        "schema_version": 1,
+        "focus": [
+          "DPR",
+          "BM25"
+        ],
+        "constraints": [
+          "只说明论文明确报告的方法",
+          "不推测效果",
+          "请给出该研究报告的具体数值",
+          "回答不超过150字"
+        ],
+        "open_questions": [],
+        "recent_questions": [
+          "DPR 论文的核心检索方法是什么？只说明论文明确报告的方法，不推测效果。",
+          "它与 BM25 的表示方式有什么区别？请延续刚才的要求。",
+          "DPR 在2026年新冠患者临床试验中的存活率是多少？请给出该研究报告的具体数值。",
+          "它与 BM25 的表示方式有什么区别？请延续刚才的要求，回答不超过150字。",
+          "它与 BM25 的表示方式有什么区别？请延续刚才的要求，回答不超过150字。"
+        ],
+        "evidence_refs": [
+          "[[C:d6d41850c0f156fbb2433d287ad3903d]]",
+          "[[C:92d3a2f1501b58f486bb2dd959b7662e]]"
+        ],
+        "turns": 5,
+        "answerability": "answer",
+        "compacted": false
+      }
+    }
+  ],
+  "evidence_anchors": [
+    {
+      "id": "205d1c4bd64d55b18e6e325f10f6d3ad",
+      "title": "Dense Passage Retrieval for Open-Domain Question Answering",
+      "page_start": 1,
+      "char_start": 0,
+      "char_end": 1400,
+      "text_hash": "a6315dfc0675c43c836c741121bc77fb253ba1244c99cd4991e99dbd56de6fab",
+      "pdf_sha256": "3e67fc1a9977715acf722d85f0b7d124b03715e975f6310a4d6c12094190912f"
+    },
+    {
+      "id": "21749fe9a84e5cf3ac4a863e667a2ea4",
+      "title": "Dense Passage Retrieval for Open-Domain Question Answering",
+      "page_start": 2,
+      "char_start": 3600,
+      "char_end": 4834,
+      "text_hash": "a9ed8bdfe12cf593cf5d3171ba13752bb8a5c312324dce29b0da1bf09a99f03d",
+      "pdf_sha256": "3e67fc1a9977715acf722d85f0b7d124b03715e975f6310a4d6c12094190912f"
+    },
+    {
+      "id": "2a0af59a93eb5effb3698b1de44f2788",
+      "title": "Dense Passage Retrieval for Open-Domain Question Answering",
+      "page_start": 6,
+      "char_start": 1200,
+      "char_end": 2600,
+      "text_hash": "03047185456e671c0d9369ed6cbfadc3a51ac83d3f6150c66006708b367bff34",
+      "pdf_sha256": "3e67fc1a9977715acf722d85f0b7d124b03715e975f6310a4d6c12094190912f"
+    },
+    {
+      "id": "806e691a64a05ab0816f45aaedab5e59",
+      "title": "Dense Passage Retrieval for Open-Domain Question Answering",
+      "page_start": 2,
+      "char_start": 0,
+      "char_end": 1400,
+      "text_hash": "db221526ad9583f86bbcf31485f1e198b7aa538a85e0e0540cbe77f742198f8f",
+      "pdf_sha256": "3e67fc1a9977715acf722d85f0b7d124b03715e975f6310a4d6c12094190912f"
+    },
+    {
+      "id": "8285b5fff01b5400aef1b79e359f9de5",
+      "title": "Dense Passage Retrieval for Open-Domain Question Answering",
+      "page_start": 9,
+      "char_start": 1200,
+      "char_end": 2600,
+      "text_hash": "55349c12f53a288740287431ce10da8513f6e0a27fae4fa9cc13a4868c271679",
+      "pdf_sha256": "3e67fc1a9977715acf722d85f0b7d124b03715e975f6310a4d6c12094190912f"
+    },
+    {
+      "id": "92d3a2f1501b58f486bb2dd959b7662e",
+      "title": "Dense Passage Retrieval for Open-Domain Question Answering",
+      "page_start": 3,
+      "char_start": 1200,
+      "char_end": 2600,
+      "text_hash": "6a223077dcec248f1db86fc3837e088ecbdd5f7273e5d3035e3ee338f461ce10",
+      "pdf_sha256": "3e67fc1a9977715acf722d85f0b7d124b03715e975f6310a4d6c12094190912f"
+    },
+    {
+      "id": "cc814a2a427e5dc8b74d7b6de3dbdf17",
+      "title": "Dense Passage Retrieval for Open-Domain Question Answering",
+      "page_start": 1,
+      "char_start": 2400,
+      "char_end": 3800,
+      "text_hash": "0bcca32cf8e3d3c3017ca20d08d5ae646eb0bfc07a82eb1d9d1c890380bdabbb",
+      "pdf_sha256": "3e67fc1a9977715acf722d85f0b7d124b03715e975f6310a4d6c12094190912f"
+    },
+    {
+      "id": "d6d41850c0f156fbb2433d287ad3903d",
+      "title": "Dense Passage Retrieval for Open-Domain Question Answering",
+      "page_start": 1,
+      "char_start": 1200,
+      "char_end": 2600,
+      "text_hash": "8a6a8fd326cd2640bbc4f7074dfd0532f820efcd471defb6f1ddc6c99ad48602",
+      "pdf_sha256": "3e67fc1a9977715acf722d85f0b7d124b03715e975f6310a4d6c12094190912f"
+    }
+  ],
+  "prior_failed_attempts": [
+    {
+      "case_id": "followup",
+      "status": "completed",
+      "actual": "refuse",
+      "error": ""
+    },
+    {
+      "case_id": "ambiguous",
+      "status": "completed",
+      "actual": "refuse",
+      "error": ""
+    },
+    {
+      "case_id": "followup",
+      "status": "completed",
+      "actual": "refuse",
+      "error": ""
+    }
+  ]
+}

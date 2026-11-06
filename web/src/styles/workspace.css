@@ -1,0 +1,81 @@
+/* 项目首页的问题输入。 */
+.home-composer {
+    border: 1.5px solid #434343;
+    border-radius: 16px;
+    padding: 18px 18px 12px;
+    background: #ffffff;
+    text-align: left;
+    box-shadow:
+        0 4px 0 #4545450c,
+        0 12px 34px #57575709;
+}
+.home-composer:focus-within {
+    border-color: #767676;
+    box-shadow: 0 0 0 3px #8484840b;
+}
+.home-composer textarea {
+    width: 100%;
+    min-height: 88px;
+    max-height: 240px;
+    resize: vertical;
+    padding: 2px 2px 12px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    line-height: 1.9;
+    font-size: 14px;
+}
+.home-composer textarea:focus {
+    outline: none;
+    box-shadow: none;
+}
+.home-compose-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+.home-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 15px;
+}
+.home-options select {
+    width: auto;
+    border: 0;
+    background: transparent;
+    font-size: 11px;
+    color: #767676;
+    padding: 5px 20px 5px 0;
+}
+.home-send {
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+    background: #3f3f3f;
+    color: white;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+}
+.home-send:hover {
+    background: #696969;
+}
+@media (max-width: 760px) {
+    .home-composer {
+        padding: 14px;
+        border-radius: 13px;
+    }
+    .home-composer textarea {
+        font-size: 16px;
+        min-height: 105px;
+    }
+}
+@media (max-width: 380px) {
+    .home-options {
+        gap: 4px;
+    }
+    .home-options select {
+        font-size: 10px;
+    }
+}

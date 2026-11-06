@@ -1,0 +1,78 @@
+{
+  "name": "open-retrieval-papers-v1",
+  "description": "公开检索与 RAG 论文示例库，供本地回归验证，不代表用户的垂直领域资料。",
+  "papers": [
+    {
+      "key": "dpr",
+      "title": "Dense Passage Retrieval for Open-Domain Question Answering",
+      "arxiv": "2004.04906",
+      "url": "https://arxiv.org/pdf/2004.04906",
+      "filename": "dpr.pdf",
+      "sha256": "3e67fc1a9977715acf722d85f0b7d124b03715e975f6310a4d6c12094190912f",
+      "resolved_arxiv_revision": "2004.04906v3"
+    },
+    {
+      "key": "rag",
+      "title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+      "arxiv": "2005.11401",
+      "url": "https://arxiv.org/pdf/2005.11401",
+      "filename": "rag.pdf",
+      "sha256": "23e3249e9a1e75418d82efecab0ea8c4d033b89c93742f63208d47ce01f21233",
+      "resolved_arxiv_revision": "2005.11401v4"
+    },
+    {
+      "key": "colbert",
+      "title": "ColBERT: Efficient and Effective Passage Search via Contextualized Late Interaction over BERT",
+      "arxiv": "2004.12832",
+      "url": "https://arxiv.org/pdf/2004.12832",
+      "filename": "colbert.pdf",
+      "sha256": "2e487d9b96e3c2e5e286d843e98a066adc0442faa3a6e8ddbd1771221bf9ae14",
+      "resolved_arxiv_revision": "2004.12832v2"
+    },
+    {
+      "key": "bge",
+      "title": "BGE M3-Embedding: Multi-Lingual, Multi-Functionality, Multi-Granularity Text Embeddings Through Self-Knowledge Distillation",
+      "arxiv": "2402.03216",
+      "url": "https://arxiv.org/pdf/2402.03216",
+      "filename": "bge.pdf",
+      "sha256": "eb38e53565da260dc1f3d49708f45441936447a7f3c7d7ef025ff62ea3e1e575",
+      "resolved_arxiv_revision": "2402.03216v5"
+    },
+    {
+      "key": "selfrag",
+      "title": "Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection",
+      "arxiv": "2310.11511",
+      "url": "https://arxiv.org/pdf/2310.11511",
+      "filename": "selfrag.pdf",
+      "sha256": "d9eaa1398abac0df67a9d0933a5bf8b6d9d83d2e72da2a486073cd842dd52978",
+      "resolved_arxiv_revision": "2310.11511v1"
+    },
+    {
+      "key": "ircot",
+      "title": "Interleaving Retrieval with Chain-of-Thought Reasoning for Knowledge-Intensive Multi-Step Questions",
+      "arxiv": "2212.10509",
+      "url": "https://arxiv.org/pdf/2212.10509",
+      "filename": "ircot.pdf",
+      "sha256": "8bb43c0bd11fafc8bdac7655eef0649b28fd9fbb44fca877b1d31d7b4527759a",
+      "resolved_arxiv_revision": "2212.10509v2"
+    },
+    {
+      "key": "middle",
+      "title": "Lost in the Middle: How Language Models Use Long Contexts",
+      "arxiv": "2307.03172",
+      "url": "https://arxiv.org/pdf/2307.03172",
+      "filename": "middle.pdf",
+      "sha256": "653b29619eae2ae4b361d7bdcdc06db4bedcb1b0eabe31814036beca8c1af0b1",
+      "resolved_arxiv_revision": "2307.03172v3"
+    },
+    {
+      "key": "crag",
+      "title": "Corrective Retrieval Augmented Generation",
+      "arxiv": "2401.15884",
+      "url": "https://arxiv.org/pdf/2401.15884",
+      "filename": "crag.pdf",
+      "sha256": "975aa1fd3c1b603126e93ff99d6504858b61301bf1d34c9df88ebe53a0b026cb",
+      "resolved_arxiv_revision": "2401.15884v3"
+    }
+  ]
+}

@@ -2,6 +2,8 @@ import os
 import shlex
 import shutil
 import tempfile
+import json
+import hashlib
 from pathlib import Path
 from typing import override
 
@@ -17,7 +19,7 @@ GUEST_PKG = "/opt/mini-harness"
 GUEST_SECRET = "/opt/mini_harness_secret"
 KEY_FILE = f"{GUEST_SECRET}/api.key"
 LOG_DIR = "/logs/agent"
-UV_ENV = '. "$HOME/.local/bin/env"'
+UV_ENV = 'if [ -f "$HOME/.local/bin/env" ]; then . "$HOME/.local/bin/env"; fi'
 load_dotenv(REPO_ROOT / ".env")
 AGENT_VERSION = atif.git_version(REPO_ROOT)
 
@@ -37,38 +39,47 @@ class MiniHarnessAgent(BaseInstalledAgent):
         max_tokens_main: int | None = None,
         max_tokens_sub: int | None = None,
         compact_limit: int | None = None,
+        clip_limit: int | None = None,
         **kwargs,
     ):
         settings = {**os.environ, **(kwargs.get("extra_env") or {})}
+        offline = settings.get("MINI_HARNESS_OFFLINE_RUNTIME")
+        self._offline_runtime = Path(offline).resolve() if offline else None
+        if self._offline_runtime:
+            manifest = json.loads((self._offline_runtime / "manifest.json").read_text())
+            for name, expected in manifest["core_sha256"].items():
+                if hashlib.sha256((REPO_ROOT / "src" / name).read_bytes()).hexdigest() != expected:
+                    raise ValueError(
+                        "Offline runtime is stale; run scripts/bench/prepare_runtime.py"
+                    )
         model = model_name or settings.get("MINI_HARNESS_MODEL")
         prefix = model.partition("/")[0] if model else None
         inferred = (
             prefix
-            if prefix in {"openai", "deepseek"}
-            else (
-                "deepseek" if not model or model.startswith("deepseek-") else "openai"
-            )
+            if prefix in {"openai", "deepseek", "local"}
+            else ("deepseek" if not model or model.startswith("deepseek-") else "openai")
         )
-        provider = (
-            provider or settings.get("MINI_HARNESS_PROVIDER") or inferred
-        ).lower()
-        if provider not in {"openai", "deepseek"}:
+        provider = (provider or settings.get("MINI_HARNESS_PROVIDER") or inferred).lower()
+        if provider not in {"openai", "deepseek", "local"}:
             raise ValueError(f"Unsupported provider: {provider}")
-        if prefix in {"openai", "deepseek"}:
+        if prefix in {"openai", "deepseek", "local"}:
             if prefix != provider:
                 raise ValueError("Model prefix conflicts with provider")
             model = model.partition("/")[2]
         if model is not None and not model.strip():
             raise ValueError("model_name must not be empty")
-        self._model_id = model or (
-            "gpt-4.1" if provider == "openai" else "deepseek-v4-flash"
+        self._model_id = (
+            model
+            or ({"openai": "gpt-4.1", "deepseek": "deepseek-v4-flash", "local": "qwen"}[provider])
         )
         key_env = (
-            api_key_env
-            or settings.get("MINI_HARNESS_API_KEY_ENV")
-            or f"{provider.upper()}_API_KEY"
+            api_key_env or settings.get("MINI_HARNESS_API_KEY_ENV") or f"{provider.upper()}_API_KEY"
         )
-        self._api_key = settings.get("MINI_HARNESS_API_KEY") or settings.get(key_env)
+        self._api_key = (
+            settings.get("MINI_HARNESS_API_KEY")
+            or settings.get(key_env)
+            or ("local" if provider == "local" else None)
+        )
         if not self._api_key:
             raise RuntimeError(f"[adapter]: set {key_env} or MINI_HARNESS_API_KEY")
         self._run_env = {
@@ -85,20 +96,19 @@ class MiniHarnessAgent(BaseInstalledAgent):
             "MAX_TOKENS_MAIN": max_tokens_main,
             "MAX_TOKENS_SUB": max_tokens_sub,
             "COMPACT_LIMIT": compact_limit,
+            "CLIP_LIMIT": clip_limit,
         }
         for name, value in options.items():
             value = value if value is not None else settings.get(f"MINI_HARNESS_{name}")
             if value is not None:
-                if name in {"MAX_TOKENS_MAIN", "MAX_TOKENS_SUB", "COMPACT_LIMIT"}:
+                if name in {"MAX_TOKENS_MAIN", "MAX_TOKENS_SUB", "COMPACT_LIMIT", "CLIP_LIMIT"}:
                     if int(value) <= 0:
                         raise ValueError(f"{name.lower()} must be positive")
                 self._run_env[f"MINI_HARNESS_{name}"] = str(value)
         if provider == "openai" and "MINI_HARNESS_BASE_URL" not in self._run_env:
             if value := settings.get("OPENAI_BASE_URL"):
                 self._run_env["MINI_HARNESS_BASE_URL"] = value
-        super().__init__(
-            logs_dir=logs_dir, model_name=f"{provider}/{self._model_id}", **kwargs
-        )
+        super().__init__(logs_dir=logs_dir, model_name=f"{provider}/{self._model_id}", **kwargs)
 
     @staticmethod
     @override
@@ -111,6 +121,24 @@ class MiniHarnessAgent(BaseInstalledAgent):
 
     @override
     async def install(self, environment: BaseEnvironment) -> None:
+        if self._offline_runtime:
+            destination = "/opt/mini-harness-runtime"
+            await environment.upload_dir(self._offline_runtime, destination)
+            with tempfile.TemporaryDirectory() as tmp:
+                secret = Path(tmp) / "secret"
+                secret.mkdir()
+                (secret / "api.key").write_text(self._api_key, encoding="utf-8")
+                await environment.upload_dir(secret, GUEST_SECRET)
+            await self.exec_as_agent(
+                environment,
+                command=(
+                    f"{UV_ENV} && UV_LINK_MODE=copy uv tool install --offline "
+                    f"--python {destination}/python/bin/python3.12 --no-index "
+                    f"--find-links {destination}/wheels "
+                    f"{destination}/wheels/mini_harness_coding_agent-0.1.0-py3-none-any.whl && which mini-harness"
+                ),
+            )
+            return
         await self.exec_as_root(
             environment,
             command="apt-get update && apt-get install -y curl ca-certificates",
@@ -133,7 +161,11 @@ class MiniHarnessAgent(BaseInstalledAgent):
             environment,
             command=(
                 "set -euo pipefail; "
-                "curl -LsSf https://astral.sh/uv/install.sh | sh && "
+                f"{UV_ENV} && "
+                "if ! command -v uv >/dev/null 2>&1; then "
+                "curl --http1.1 --retry 4 --retry-delay 2 -LsSf "
+                "https://astral.sh/uv/install.sh -o /tmp/mini-harness-install-uv.sh && "
+                "sh /tmp/mini-harness-install-uv.sh; fi && "
                 f"{UV_ENV} && "
                 f"uv tool install --python 3.12 {GUEST_PKG} && "
                 "which mini-harness"
@@ -146,9 +178,7 @@ class MiniHarnessAgent(BaseInstalledAgent):
             d = Path(self.logs_dir)
             traj = atif.build(d, version=AGENT_VERSION, model_name=self._model_id)
             if traj is None:
-                print(
-                    f"[adapter]: no trajectory for {d.parent.name} (missing or empty session)"
-                )
+                print(f"[adapter]: no trajectory for {d.parent.name} (missing or empty session)")
                 return
             atif.write_trajectory(d, traj)
             fm = traj.final_metrics

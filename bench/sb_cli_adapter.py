@@ -17,9 +17,7 @@ class SBCLIPredictionAgent(MiniHarnessAgent):
         super().__init__(logs_dir=logs_dir, **kwargs)
         self.repo_dir = repo_dir
 
-    async def export_prediction(
-        self, environment: BaseEnvironment, base_commit: str
-    ) -> None:
+    async def export_prediction(self, environment: BaseEnvironment, base_commit: str) -> None:
         remote_patch = f"{LOG_DIR}/model.patch"
         command = (
             "set -euo pipefail; "
@@ -31,9 +29,7 @@ class SBCLIPredictionAgent(MiniHarnessAgent):
             f"mkdir -p {shlex.quote(LOG_DIR)}; "
             f"git -c core.fileMode=true diff --cached --binary --full-index --no-ext-diff --no-textconv {shlex.quote(base_commit)} -- > {shlex.quote(remote_patch)}"
         )
-        await self.exec_as_agent(
-            environment, command=command, cwd=self.repo_dir, timeout_sec=30
-        )
+        await self.exec_as_agent(environment, command=command, cwd=self.repo_dir, timeout_sec=30)
         with tempfile.TemporaryDirectory() as directory:
             patch = Path(directory) / "model.patch"
             await environment.download_file(remote_patch, patch)
@@ -68,13 +64,9 @@ class SBCLIPredictionAgent(MiniHarnessAgent):
             await super().run(instruction, environment, context)
         except BaseException:
             try:
-                await asyncio.wait_for(
-                    self.export_prediction(environment, base_commit), timeout=60
-                )
+                await asyncio.wait_for(self.export_prediction(environment, base_commit), timeout=60)
             except Exception as error:
                 self.logger.error("Failed to preserve partial prediction: %s", error)
             raise
         else:
-            await asyncio.wait_for(
-                self.export_prediction(environment, base_commit), timeout=60
-            )
+            await asyncio.wait_for(self.export_prediction(environment, base_commit), timeout=60)

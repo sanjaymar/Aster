@@ -1,0 +1,374 @@
+/* Human-authored documents, tables and attachments. */
+.page-heading h1 {
+    font-family: inherit;
+    font-size: 25px;
+    font-weight: 600;
+}
+.heading-count {
+    color: #929299;
+    font-size: 14px;
+    font-weight: 400;
+    margin-left: 12px;
+}
+.global-error {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 500;
+    max-width: min(560px, calc(100vw - 40px));
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #fff;
+    color: #333;
+    border: 1px solid #bbb;
+    padding: 12px 16px;
+    box-shadow: 0 6px 24px #0001;
+    border-radius: 6px;
+    font-size: 13px;
+}
+.document-library {
+    display: grid;
+    grid-template-columns: 160px minmax(0, 1fr);
+    gap: 28px;
+}
+.document-folders {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    border-right: 1px solid var(--line);
+    padding-right: 14px;
+}
+.document-folders button {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    text-align: left;
+    padding: 10px;
+    font-size: 12px;
+    border-radius: 5px;
+    background: none;
+    border: 0;
+}
+.document-folders button.active {
+    background: #ececef;
+    color: #111;
+}
+.document-folders button span {
+    margin-left: auto;
+    color: #999;
+}
+.document-search {
+    margin-bottom: 20px;
+    background: #fff;
+    width: 100%;
+    max-width: none;
+}
+.main-content.is-document {
+    padding: 0 0 35px;
+    background: #fafafa;
+}
+.document-workspace {
+    min-width: 0;
+}
+.document-topline {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--line);
+    background: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+}
+.document-save-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: #999;
+    font-size: 11px;
+}
+.document-sheet {
+    width: min(960px, calc(100% - 48px));
+    margin: 26px auto;
+    padding: 42px 46px;
+    background: #fff;
+    border: 1px solid #e9e9ec;
+    min-height: 650px;
+}
+.document-title {
+    width: 100%;
+    background: none;
+    border: 0;
+    padding: 0;
+    font-size: 30px;
+    font-weight: 600;
+    outline: none;
+    height: auto;
+    border-radius: 0;
+}
+.document-title:focus {
+    box-shadow: none;
+}
+.document-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 18px 0 24px;
+    color: #95959d;
+    font-size: 11px;
+}
+.document-meta input:not([type="checkbox"]) {
+    max-width: 130px;
+    background: #fafafa;
+    border: 0;
+    font-size: 11px;
+    padding: 4px 8px;
+    min-height: 26px;
+}
+.document-meta .check-label {
+    font-size: 11px;
+    gap: 6px;
+}
+.toolbar-spacer {
+    flex: 1;
+}
+.rich-editor {
+    border: 1px solid #e8e8ec;
+    border-radius: 5px;
+    min-width: 0;
+    background: #fff;
+}
+.format-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 7px;
+    background: #fcfcfc;
+    border-bottom: 1px solid #eeeeef;
+}
+.format-toolbar button {
+    border: 0;
+    background: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    min-width: 28px;
+    min-height: 28px;
+    border-radius: 3px;
+    font-size: 11px;
+    color: #666;
+}
+.format-toolbar button:hover,
+.format-toolbar button.active {
+    background: #eaeaec;
+    color: #111;
+}
+.format-toolbar select {
+    width: auto;
+    min-width: 76px;
+    padding: 4px 22px 4px 6px;
+    min-height: 28px;
+    border: 0;
+    background-color: transparent;
+    font-size: 11px;
+}
+.rich-editor .tiptap {
+    min-height: 360px;
+    padding: 24px;
+    outline: none;
+    font-size: 15px;
+    line-height: 1.85;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+.rich-editor .tiptap p {
+    margin: 0 0 12px;
+}
+.rich-editor .tiptap h1 {
+    font-size: 1.7em;
+    margin: 1.2em 0 0.5em;
+}
+.rich-editor .tiptap h2 {
+    font-size: 1.35em;
+    margin: 1.1em 0 0.5em;
+}
+.rich-editor .tiptap h3 {
+    font-size: 1.15em;
+    margin: 1em 0 0.4em;
+}
+.rich-editor .tiptap ul,
+.rich-editor .tiptap ol {
+    padding-left: 24px;
+    margin: 12px 0;
+}
+.rich-editor .tiptap blockquote {
+    border-left: 3px solid #bbb;
+    color: #75757d;
+    padding-left: 16px;
+    margin: 18px 0;
+}
+.rich-editor .tiptap pre {
+    background: #f3f3f5;
+    padding: 16px;
+    overflow: auto;
+    font-size: 12px;
+}
+.rich-editor .tiptap code {
+    background: #f2f2f4;
+    border-radius: 3px;
+    padding: 1px 4px;
+}
+.rich-editor .tiptap table {
+    border-collapse: collapse;
+    width: 100%;
+    table-layout: fixed;
+    margin: 15px 0;
+    overflow: hidden;
+}
+.rich-editor .tiptap td,
+.rich-editor .tiptap th {
+    position: relative;
+    border: 1px solid #d9d9df;
+    padding: 8px 10px;
+    min-width: 40px;
+    vertical-align: top;
+}
+.rich-editor .tiptap th {
+    font-weight: 600;
+    background: #f5f5f7;
+}
+.rich-editor .tiptap td p,
+.rich-editor .tiptap th p {
+    margin: 0;
+}
+.rich-editor .tiptap .selectedCell::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: #0000000b;
+    pointer-events: none;
+}
+.rich-editor .tiptap img {
+    max-width: 100%;
+    height: auto;
+}
+.rich-editor .tiptap a {
+    color: #333;
+    text-decoration: underline;
+}
+.rich-editor.compact .tiptap {
+    min-height: 190px;
+    font-size: 13px;
+    padding: 14px;
+}
+.markdown-source {
+    width: 100%;
+    min-height: 360px;
+    border: 0;
+    padding: 20px;
+    font: 13px/1.8 monospace;
+    resize: vertical;
+    border-radius: 0;
+}
+.document-attachments {
+    margin-top: 24px;
+    border-top: 1px solid #eee;
+    padding-top: 14px;
+}
+.attachment-preview {
+    max-width: 150px;
+    max-height: 100px;
+    object-fit: contain;
+    border: 1px solid #eee;
+}
+.experiment-tabs {
+    display: inline-flex;
+    margin-bottom: 24px;
+}
+.plan-details {
+    margin: 18px 0;
+    padding: 12px;
+    border: 1px solid #eee;
+    border-radius: 4px;
+}
+.plan-details summary {
+    cursor: pointer;
+    font-size: 12px;
+    color: #777;
+}
+.plan-details .form-columns {
+    margin-top: 15px;
+}
+.delete-button {
+    color: #777;
+}
+.trash-row {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--line);
+    padding: 16px 0;
+}
+.trash-row > div {
+    min-width: 0;
+}
+.trash-row small {
+    display: block;
+    color: var(--muted);
+    margin-top: 4px;
+}
+.experiment-search {
+    max-width: 420px;
+    margin: 12px 0 24px;
+}
+.dashboard-task .home-composer textarea {
+    min-height: 82px;
+    height: 82px;
+}
+.dashboard-task .home-composer {
+    padding-top: 12px;
+}
+@media (max-width: 760px) {
+    .document-library {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+    .document-folders {
+        flex-direction: row;
+        overflow: auto;
+        border: 0;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 10px;
+    }
+    .document-folders button {
+        flex-shrink: 0;
+    }
+    .document-topline {
+        padding: 10px 14px;
+        gap: 12px;
+    }
+    .document-sheet {
+        width: calc(100% - 16px);
+        margin: 10px auto;
+        padding: 22px 16px;
+        min-height: 500px;
+    }
+    .document-title {
+        font-size: 25px;
+    }
+    .rich-editor .tiptap {
+        padding: 16px;
+        min-height: 300px;
+        font-size: 14px;
+    }
+    .document-meta {
+        gap: 10px;
+    }
+}
