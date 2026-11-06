@@ -1,73 +1,73 @@
 # Aster
 
-科研资料与个人研究记录平台，基于 mini-harness。默认使用本地 Qwen，也可配置模型 API 或 Codex CLI。
+Aster 是一个本地运行的科研工作台。你可以导入论文、在 PDF 上标注与提问、核对回答的原文依据，再把阅读笔记、实验记录和写作草稿整理到同一个项目。
 
-[快速上手与本机数据位置](docs/WEB_GUIDE.md#快速上手) · [实验指南](docs/EXPERIMENTS.md)
+[使用指南](docs/WEB_GUIDE.md#文献阅读) · [实验与评测](docs/EXPERIMENTS.md) · [代码导览](#代码导览)
 
-## 简历描述
+## 能做什么
 
-**Aster：科研知识管理与多轮检索问答平台｜主要完成人**
+| 功能 | 用法 |
+| --- | --- |
+| 文献阅读 | 导入 PDF、Markdown、TXT 或 CSV。阅读器提供目录、搜索、选段标注和阅读位置恢复。 |
+| 有引用的问答 | 对当前论文选段提问，或在项目内跨论文和笔记检索。点击引用可查看对应的原文页、文本段或记录版本。 |
+| 笔记与写作 | 用精读、组会、方法卡片和论文提纲等模板起草文档。支持 Markdown、表格、公式预览、附件和历史版本。 |
+| 实验记录 | 记录方案、过程和结果，附上数据表与图。结果可关联实际使用的方案版本。 |
+| 模型与技能 | 支持 OpenAI 兼容 API、OpenAI API 和本机 Codex CLI。项目问答和阅读器可分别选模型，内置科研技能可按需启用，也可导入 `SKILL.md`。 |
 
-**技术栈：** Python、mini-harness、Qwen、FastAPI、Pydantic、BGE-M3、FAISS、BM25、RRF、Cross-Encoder、SQLAlchemy / Alembic、SQLite / PostgreSQL、React / TypeScript、Tiptap、PDF.js。
+项目可自定义领域、术语和回答偏好。代谢组学是本仓库的示例研究领域。
 
-面向代谢组学文献阅读、研究思路记录与证据问答，构建集论文库、原文标注、个人文档、实验记录及多轮问答于一体的平台。
+## 快速开始
 
-- **知识库与检索：** 采集300篇开放论文的原始PDF与XML全文，以XML形成19,250个保留来源、章节与版本的分块；采用BGE-M3 / FAISS与BM25双路召回、RRF融合、Cross-Encoder重排，封装`search_papers`、`read_chunk`。另整理202项公开研究元数据和3份官方处理矩阵。
-- **Agent：** 基于mini-harness构建日常助手，将混合检索、原文读取、文献目录与技能加载封装为受限工具，按问题需要调用；支持独立配置科研问答与PDF问答模型。另保留七阶段RAG实验流程，通过Pydantic校验意图、改写、证据充分性及主张引用，用于组件评测与消融。
-- **科研记录：** 实现PDF / 文本连续阅读、版本化摘录标注、多类型笔记、标签/分类/置顶、文档关联与反向关联、富文本表格/清单、公式预览及实验记录；补齐资料增删改查、回收站、历史版本与备份。知识库主题、术语和回答偏好可自定义；内置7个科研技能，支持导入指令型SKILL.md。
-- **追踪与记忆：** 引入AgentState与Turn / Stage追踪，保存输入输出、工具调用、状态、耗时和用量；维护研究对象、逐字约束、问题与引用的会话快照，支持规则压缩及`/trace`、`/corpus`、`/memory`诊断命令。
-- **评测：** 构建100意图、40改写、100检索、55边界、30组四轮对话及70-turn端到端子集，完成四组检索对照和去改写、去Reflect、去重排、去记忆消融。草案题集上，混合重排Recall@5为80.75%，较混合召回提高22.75个百分点；70-turn工程流程成功率为77.14%。
+需要 Python 3.12+、uv 和 Node.js 22.13+。
 
-指标来自作者/模型辅助草案，尚待独立人工复核；工程成功率不等同科研答案准确率。生成模型未微调；FAISS使用精确IndexFlatIP，BGE-M3只使用dense输出。完整口径与SWE-bench单题结果见实验指南。
-
-## 代码分层
-
-```text
-src/
-  mini_harness/          底层模型与工具循环、重试、上下文压缩
-  aster/
-    app/                CLI、配置、任务队列、API启动
-      routes/           项目、文献、文档、会话、诊断接口
-    domain/             数据模型、输入契约、记录与阅读业务
-    agent/              日常助手、技能；独立七阶段实验、记忆与追踪
-    models/             多模型配置、密钥隔离、API与Codex适配
-    retrieval/          分块、证据快照、混合检索与重排
-    data/               公开资料采集与导入
-    storage/            数据库、迁移、项目备份恢复
-    evaluation/         问答评测、消融与基准结果读取
-web/src/
-  features/             library、documents、experiments、assistant等功能
-  layout/               导航与布局
-  shared/               API类型、通用界面、引用与附件
-  styles/               基础与功能样式
-scripts/                 data、evaluation、bench、server
-tests/                  unit、integration、browser、live
+```bash
+git clone https://github.com/sanjaymar/Aster.git
+cd Aster
+uv sync --locked
+npm ci --prefix web
+npm run build --prefix web
+uv run --locked aster
 ```
 
-Web提供日常工具；记忆、追踪、评测与SWE-bench保留在后端和CLI。`mini-harness`是底座，模型可切换；`openai`包连接兼容API，`models/codex.py`调用已登录的本机Codex CLI，业务工具仍由Aster执行。
+打开 [127.0.0.1:8765](http://127.0.0.1:8765)。首次启动时创建一个项目，然后导入一篇 PDF。仓库提供采集与导入脚本，论文由使用者导入或按实验指南获取。[数据准备](docs/EXPERIMENTS.md#数据与题集)
 
-七阶段编排是本项目的`ResearchPipeline`实现；`Generate`阶段调用mini-harness的模型与工具循环。SWE-bench直接调用mini-harness编码循环。
+在「设置 → 模型」中配置生成服务。本地兼容接口默认是 `http://127.0.0.1:8000/v1`，例如已运行的 Qwen 服务。也可以填写远程 API，或选择已在本机登录的 Codex CLI。阅读、标注和编辑笔记可以独立使用。
 
-## 代码学习路线
+### 第一次读论文
 
-| 顺序 | 入口 | 要看懂什么 |
-| --- | --- | --- |
-| 1 | `app/routes/conversations.py` → `app/runtime.py:create` | 请求如何排队、固定资料版本并创建对话 |
-| 2 | `agent/assistant.py:DailyAssistant.run` → `mini_harness/agent.py:_run_turn` | 日常助手如何自主调用检索、读取与技能工具 |
-| 3 | `agent/llm.py`、`retrieval/corpus.py` | 查询结构、允许证据、分块与引用ID |
-| 4 | `retrieval/engine.py:Retriever.search` | BM25、dense、RRF与重排各负责什么 |
-| 5 | `models/profiles.py`、`clients.py`、`codex.py` | 默认模型、读PDF独立模型、凭据与接入方式 |
-| 6 | `agent/state.py`、`memory.py`、`trace.py` | 单轮状态、跨轮记忆和执行记录的区别 |
-| 7 | `domain/reading.py`、`management.py`、`service.py`、`storage/archive.py` | 标注锚点、版本、回收站与备份关联 |
-| 8 | `web/src/features/library/`、`documents/` | 阅读器、文档编辑、自动保存与表格 |
-| 9 | `agent/pipeline.py`、`generation.py`、`evaluation/suite.py` | 实验流程的结构化输出、主张审核和消融；旧成绩只属于此流程 |
+1. 打开一篇已导入的 PDF，选中一段方法文字，点击「询问选段」。
+2. 问一个能核对的问题，例如「这段里的实验组和对照组分别有多少样本？」。
+3. 点击回答中的引用，对照论文的页码和实验条件。
+4. 点击「记笔记」，保存摘录、引用和核对后的理解。
 
-练习：空库先讨论一个想法；导入论文后询问具体方法，再追问局限。运行`aster trace RUN_ID`，沿`question → snapshot → tool_calls → evidence → answer → memory`对应代码。研究实验另看`plan → hits → decision → claims`。
+### 启用混合检索
 
-三条业务链：
+基础安装可用 BM25 关键词检索。要加入 BGE-M3 向量召回、FAISS 和 Cross-Encoder 重排，安装检索依赖并下载模型。
 
-- **导入与阅读：** `routes/library.py → Service.import_source`保存文件、原文版本与页/段；`Corpus.ensure_chunks`按需创建分块，`ReadingLibrary`保存阅读位置和标注。
-- **记录：** `DocumentEditor → routes/documents.py → Service.save_record`新增不可变版本；引用绑定原文或记录版本，后续编辑不会覆盖旧依据。
-- **问答：** `Assistant → routes/conversations.py → RunManager → DailyAssistant → MiniHarnessAgent → 模型`，模型按需调用`search_knowledge → Retriever`。`engine=pipeline`才进入独立的ResearchPipeline；评测入口显式固定此值。
+```bash
+uv sync --locked --extra retrieval
+uv run --locked --extra retrieval aster models --download
+uv run --locked --extra retrieval aster
+```
 
-参考：底座[mini-harness](https://github.com/mini-harness/mini-harness)；阅读交互[NeoRead](https://github.com/cynicalight/NeoRead)、[Readest](https://github.com/readest/readest)；技能方法对照[K-Dense Scientific Agent Skills](https://github.com/K-Dense-AI/scientific-agent-skills)。内置技能为Aster编写的适配工作流，不包含上游的分析脚本或外部数据库客户端。
+## 数据与运行方式
+
+新安装默认将 SQLite 数据库、导入文件和索引放在 `.local/aster/`。可用 `ASTER_DATA_DIR` 指定目录，用 `ASTER_DATABASE_URL` 连接 PostgreSQL。项目概览提供 ZIP 导出和恢复，便于迁移论文、笔记、标注与附件。[数据与备份](docs/WEB_GUIDE.md#备份)
+
+选择本地生成服务时，问答使用本机服务。选择远程 API 或 Codex 时，所选资料与会话上下文会交给对应的模型服务。扫描版 PDF 可以阅读原图，问答使用已提取的文字。
+
+## 代码导览
+
+前端使用 React、TypeScript、PDF.js 和 Tiptap。FastAPI 提供资料、记录和问答接口，SQLAlchemy 与 Alembic 管理存储和迁移。日常问答由 mini-harness 调用模型，并按需使用文献目录、检索、原文读取与技能工具。
+
+| 想看什么 | 从哪里开始 |
+| --- | --- |
+| 选段如何成为一条问题 | [阅读器 `ask`](web/src/features/library/PaperReader.tsx#L360) → [问答 `submit`](web/src/features/assistant/Assistant.tsx#L242) |
+| 模型能查哪些资料 | [创建任务与固定资料版本](src/aster/app/runtime.py#L119) → [日常助手与工具](src/aster/agent/assistant.py) |
+| 检索如何找到证据 | [语料与分块](src/aster/retrieval/corpus.py) → [BM25、向量召回、RRF 和重排](src/aster/retrieval/engine.py) |
+| 引用和笔记如何保存 | [引用按钮](web/src/shared/MarkdownView.tsx) → [记录与证据服务](src/aster/domain/service.py) |
+| 模型调用与评测怎么跑 | [mini-harness 工具循环](src/mini_harness/agent.py) · [七阶段评测流程](src/aster/agent/pipeline.py) · [实验指南](docs/EXPERIMENTS.md) |
+
+评测指南记录了代谢组学七阶段基线的题集、指标、消融和复跑命令。日常助手另有行为测试，SWE-bench 部分记录单题验证。[评测结果与口径](docs/EXPERIMENTS.md)
+
+Aster 的工具循环基于 mini-harness。阅读交互参考 NeoRead 与 Readest，科研流程参考 K-Dense Scientific Agent Skills。[mini-harness](https://github.com/mini-harness/mini-harness) · [NeoRead](https://github.com/cynicalight/NeoRead) · [Readest](https://github.com/readest/readest) · [K-Dense](https://github.com/K-Dense-AI/scientific-agent-skills)
